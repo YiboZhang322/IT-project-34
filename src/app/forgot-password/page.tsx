@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function ForgotPasswordPage() {
@@ -116,15 +117,14 @@ export default function ForgotPasswordPage() {
 
       {/* Logo in top right */}
       <div className="absolute top-8 right-8 flex items-center gap-3 z-10">
-        <div className="w-12 h-12 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-xl ring-2 ring-orange-400/20">
-          <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-            <span className="text-white font-black text-xs tracking-wider">Go</span>
-          </div>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-xl font-black tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">GoPlanner</span>
-          <span className="text-xs text-orange-400 font-medium tracking-widest uppercase">Travel Smart</span>
-        </div>
+        <Image
+          src="/Logo.png"
+          alt="GoPlanner Logo"
+          width={150}
+          height={50}
+          className="object-contain brightness-125 contrast-125 drop-shadow-lg"
+          style={{ filter: 'brightness(1.5) contrast(1.4) saturate(1.3) hue-rotate(-10deg)' }}
+        />
       </div>
 
       {/* Main forgot password card */}

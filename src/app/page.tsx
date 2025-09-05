@@ -20,15 +20,14 @@ export default function Home() {
       {/* Navigation Header */}
       <header className="max-w-7xl mx-auto flex justify-between items-center px-8 py-8">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 ring-2 ring-orange-400/20">
-            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-              <span className="text-white font-black text-xs tracking-wider">Go</span>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-black tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">GoPlanner</span>
-            <span className="text-xs text-orange-400 font-medium tracking-widest uppercase">Travel Smart</span>
-          </div>
+          <Image
+            src="/Logo.png"
+            alt="GoPlanner Logo"
+            width={180}
+            height={60}
+            className="object-contain brightness-125 contrast-125 drop-shadow-lg"
+            style={{ filter: 'brightness(1.5) contrast(1.4) saturate(1.3) hue-rotate(-10deg)' }}
+          />
         </div>
         
         <nav className="flex items-center gap-10">
@@ -229,15 +228,14 @@ export default function Home() {
         <footer className="max-w-7xl mx-auto px-8 py-12 border-t border-gray-800/50">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 ring-1 ring-orange-400/20">
-                <div className="w-6 h-6 bg-white/10 rounded-md flex items-center justify-center backdrop-blur-sm">
-                  <span className="text-white font-black text-xs tracking-wider">Go</span>
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-black tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">GoPlanner</span>
-                <span className="text-xs text-orange-400/80 font-medium tracking-wide uppercase">Travel Smart</span>
-              </div>
+              <Image
+                src="/Logo.png"
+                alt="GoPlanner Logo"
+                width={150}
+                height={50}
+                className="object-contain brightness-125 contrast-125 drop-shadow-lg"
+                style={{ filter: 'brightness(1.5) contrast(1.4) saturate(1.3) hue-rotate(-10deg)' }}
+              />
             </div>
             
             <div className="flex items-center gap-8">
