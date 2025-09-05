@@ -38,7 +38,7 @@ export default function TripPlanner() {
     departureDate: '',
     returnDate: '',
     adults: 0,
-    children: 0,
+    children: -1,
     hasElderly: false,
     budgetType: '',
     totalCost: '',
@@ -164,8 +164,8 @@ export default function TripPlanner() {
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-2 font-bold">Children</label>
           <select 
-            value={tripData.children === 0 ? '' : tripData.children}
-            onChange={(e) => updateTripData({ children: parseInt(e.target.value) || 0 })}
+            value={tripData.children === -1 ? '' : tripData.children}
+            onChange={(e) => updateTripData({ children: e.target.value === '' ? -1 : parseInt(e.target.value) })}
             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none bg-white text-gray-900 font-medium shadow-sm hover:border-gray-400 transition-all duration-200"
           >
             <option value="">Select children</option>
@@ -272,7 +272,8 @@ export default function TripPlanner() {
   const handleStartPlanning = () => {
     const specialNotesText = tripData.specialNotes ? `\nSpecial Notes: ${tripData.specialNotes}` : '';
     const formattedTotalCost = tripData.totalCost ? tripData.totalCost.replace(/(\d+[^$]*)\s*\$/, '$$$1') : '';
-    alert(`🎉 Trip Planning Started!\n\nDestination: ${tripData.destination}\nTransportation: ${tripData.toDestination}\nDeparture Date: ${tripData.departureDate}\nReturn Date: ${tripData.returnDate}\nAdults: ${tripData.adults}\nChildren: ${tripData.children}\nBudget Type: ${tripData.budgetType}\nTotal Cost: ${formattedTotalCost}\nFood Preference: ${tripData.foodPreference}${specialNotesText}`);
+    const childrenCount = tripData.children === -1 ? 0 : tripData.children;
+    alert(`🎉 Trip Planning Started!\n\nDestination: ${tripData.destination}\nTransportation: ${tripData.toDestination}\nDeparture Date: ${tripData.departureDate}\nReturn Date: ${tripData.returnDate}\nAdults: ${tripData.adults}\nChildren: ${childrenCount}\nBudget Type: ${tripData.budgetType}\nTotal Cost: ${formattedTotalCost}\nFood Preference: ${tripData.foodPreference}${specialNotesText}`);
   };
 
   return (
