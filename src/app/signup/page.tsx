@@ -108,30 +108,38 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    
+
     const validationError = validateForm()
     if (validationError) {
       setError(validationError)
       return
     }
-    
+
     try {
-      const signupSuccess = await signup(formData.email, formData.password, formData.name)
-      if (signupSuccess) {
-        // Clear saved form data after successful signup
+      const ok = await signup(formData.email, formData.password, formData.name)
+      if (ok) {
+        // 清理本地保存的临时表单
         localStorage.removeItem('signup_form_data')
         localStorage.removeItem('signup_accept_terms')
-        
-        success(`Welcome to GoPlanner, ${formData.name}!`, 'Your account has been created successfully.')
-        router.push('/')
+
+        // 提示并跳到验证码页
+        success('Check your email', 'We sent you a verification code.')
+        // 带上 email，方便确认页自动回填
+        router.push(`/confirm?email=${encodeURIComponent(formData.email)}`)
       }
     } catch (error: any) {
+      console.log('signup ui error:', error)
       if (error.message === 'User already exists') {
         setError('This email is already registered. Please use a different email or sign in instead.')
+      } else if (error.message === 'Weak password') {
+        setError('Password does not meet the pool policy.')
+      } else if (error.message === 'Client secret enabled') {
+        setError('Your User Pool App client has a client secret. Create a web client WITHOUT client secret.')
       } else {
-        setError('Registration failed. Please try again.')
+        setError(error?.message || 'Registration failed. Please try again.')
       }
     }
+
   }
 
   return (
