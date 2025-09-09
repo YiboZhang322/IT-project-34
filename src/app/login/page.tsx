@@ -42,20 +42,11 @@ export default function LoginPage() {
     const loginResult = await login(email, password, rememberMe)
     
     if (loginResult.success) {
-      // Get the user data to show personalized welcome message
-      const userData = localStorage.getItem('user_data') || sessionStorage.getItem('user_data')
-      const userName = userData ? JSON.parse(userData).name : 'User'
-      success(`Welcome back, ${userName}!`, 'You have successfully logged in.')
+      success('Welcome back!', 'You have successfully logged in.')
       router.push('/')
-    } else if (loginResult.isNewUser) {
-      setError('This email is not registered. Please sign up first.')
-      showError('Account not found', 'This email is not registered. Please create an account first.')
-    } else if (loginResult.incorrectPassword) {
-      setError('Password is incorrect. Please try again.')
-      showError('Login failed', 'Password is incorrect. Please check your password and try again.')
     } else {
-      setError('Login failed. Please try again.')
-      showError('Login failed', 'Something went wrong. Please try again.')
+      setError(loginResult.error || 'Login failed. Please try again.')
+      showError('Login failed', loginResult.error || 'Something went wrong. Please try again.')
     }
   }
 

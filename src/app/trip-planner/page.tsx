@@ -311,7 +311,7 @@ export default function TripPlanner() {
               </div>
             <button 
               onClick={handleLogout}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white px-6 py-3 rounded-2xl transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white px-6 py-3 rounded-full transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               LOGOUT
             </button>
@@ -425,7 +425,7 @@ export default function TripPlanner() {
       </div>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-8 py-12 border-t border-gray-800/50">
+      <footer className="max-w-7xl mx-auto px-8 py-8 border-t border-gray-800/50">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Image
@@ -466,7 +466,7 @@ export default function TripPlanner() {
           </div>
         </div>
         
-        <div className="text-center mt-12 text-gray-500 text-sm font-medium">
+        <div className="text-center mt-6 text-gray-500 text-sm font-medium">
           © 2025 GoPlanner - by Group 34
         </div>
       </footer>

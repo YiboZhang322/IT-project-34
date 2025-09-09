@@ -2,7 +2,7 @@ import Image from 'next/image'
 
 interface UserAvatarProps {
   src?: string
-  name: string
+  name?: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
   showOnlineStatus?: boolean
@@ -31,8 +31,9 @@ export default function UserAvatar({
     xl: 'w-4 h-4'
   }
 
-  // Generate initials from name
-  const initials = name
+  // Generate initials from name with safety check
+  const safeName = name || 'User'
+  const initials = safeName
     .split(' ')
     .map(word => word.charAt(0))
     .join('')
@@ -64,13 +65,13 @@ export default function UserAvatar({
         {src ? (
           <Image
             src={src}
-            alt={name}
+            alt={safeName}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${getAvatarColor(name)} flex items-center justify-center`}>
+          <div className={`w-full h-full bg-gradient-to-br ${getAvatarColor(safeName)} flex items-center justify-center`}>
             {initials}
           </div>
         )}
