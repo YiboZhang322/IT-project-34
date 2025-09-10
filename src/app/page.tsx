@@ -3,17 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import UserAvatar from "@/components/UserAvatar";
-import { useToastContext } from "@/contexts/ToastContext";
+import UserProfileDropdown from "@/components/UserProfileDropdown";
 
 export default function Home() {
-  const { user, isAuthenticated, logout } = useAuth()
-  const { info } = useToastContext()
-  
-  const handleLogout = () => {
-    logout()
-    info('Logged out', 'You have been successfully logged out.')
-  }
+  const { isAuthenticated } = useAuth()
   
   return (
     <div className="min-h-screen bg-black text-white">
@@ -37,24 +30,7 @@ export default function Home() {
         </nav>
         
         {isAuthenticated ? (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10 hover:border-white/20 transition-all duration-300">
-              <UserAvatar 
-                src={user?.avatar}
-                name={user?.name || 'User'}
-                size="md"
-                showOnlineStatus={true}
-                isOnline={true}
-              />
-              <span className="text-white font-medium text-sm">Welcome, {user?.name}</span>
-            </div>
-            <button 
-              onClick={handleLogout}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white px-6 py-3 rounded-full transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              LOGOUT
-            </button>
-          </div>
+          <UserProfileDropdown variant="large" />
         ) : (
           <Link href="/login">
             <button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
