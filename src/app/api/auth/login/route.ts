@@ -4,9 +4,15 @@ import jwt from 'jsonwebtoken';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'key-change-in-production';
-
 export async function POST(request: NextRequest) {
+  const JWT_SECRET = process.env.JWT_SECRET;
+
+  if (!JWT_SECRET) {
+    return NextResponse.json(
+      { error: 'JWT_SECRET environment variable is not configured' },
+      { status: 500 }
+    );
+  }
   try {
     const { email, password } = await request.json();
 

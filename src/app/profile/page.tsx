@@ -43,7 +43,7 @@ function ProfilePage() {
       if (data.success) {
         updateUser(data.user)
         setIsEditing(false)
-        success('Profile Updated', 'Your profile has been updated successfully!')
+        success('Information Updated', 'Your information has been updated successfully!')
       } else {
         error('Update Failed', data.error || 'Failed to update profile')
       }
