@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToastContext } from '@/contexts/ToastContext'
 
@@ -17,13 +17,15 @@ export default function LoginPage() {
   const { login, isLoading, isAuthenticated } = useAuth()
   const { success, error: showError } = useToastContext()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/')
+      const returnUrl = searchParams.get('returnUrl') || '/'
+      router.push(returnUrl)
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, router, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +45,8 @@ export default function LoginPage() {
     
     if (loginResult.success) {
       success('Welcome back!', 'You have successfully logged in.')
-      router.push('/')
+      const returnUrl = searchParams.get('returnUrl') || '/'
+      router.push(returnUrl)
     } else {
       setError(loginResult.error || 'Login failed. Please try again.')
       showError('Login failed', loginResult.error || 'Something went wrong. Please try again.')

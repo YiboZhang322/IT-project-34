@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import UserAvatar from '@/components/UserAvatar';
 import { useToastContext } from '@/contexts/ToastContext';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { useFavorites } from '@/hooks/useFavorites';
+import FavoritesPanel from '@/components/FavoritesPanel';
 
 type TabType = 'views' | 'restaurant' | 'hotel';
 
@@ -48,9 +50,19 @@ export default function MelbourneGuidebookPage() {
   const [searchQuery, setSearchQuery] = useState('Melbourne');
   const [searchError, setSearchError] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedAttraction, setSelectedAttraction] = useState<Attraction | null>(null);
+  const [showFavorites, setShowFavorites] = useState(false);
+  
+  // Use the favorites hook
+  const { 
+    favorites, 
+    isLoading: favoritesLoading, 
+    toggleFavorite, 
+    isFavorited, 
+    removeFromFavorites,
+    processingItems
+  } = useFavorites();
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -115,16 +127,20 @@ export default function MelbourneGuidebookPage() {
     }
   };
 
-  const handleAddToList = (attractionId: string, attractionName: string) => {
-    setAddedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(attractionId)) {
-        newSet.delete(attractionId);
-      } else {
-        newSet.add(attractionId);
-      }
-      return newSet;
-    });
+  const handleAddToList = async (attraction: Attraction) => {
+    const attractionData = {
+      id: attraction.id,
+      name: attraction.name,
+      description: attraction.description,
+      image: attraction.image,
+      category: attraction.category,
+      rating: attraction.rating,
+      lat: attraction.lat,
+      lng: attraction.lng,
+      city: 'Melbourne'
+    };
+    
+    await toggleFavorite(attractionData);
   };
 
   const attractions: Attraction[] = [
@@ -255,13 +271,13 @@ export default function MelbourneGuidebookPage() {
           </div>
           <button 
             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap flex items-center gap-2 ${
-              addedItems.has(attraction.id)
+              isFavorited(attraction.id)
                 ? 'bg-green-600 hover:bg-green-700 active:bg-green-800 text-white'
                 : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
             }`}
-            onClick={() => handleAddToList(attraction.id, attraction.name)}
+            onClick={() => handleAddToList(attraction)}
           >
-            {addedItems.has(attraction.id) ? (
+            {isFavorited(attraction.id) ? (
               'Move from List'
             ) : (
               'Add To MyList'
@@ -314,7 +330,7 @@ export default function MelbourneGuidebookPage() {
             </button>
           </div>
         ) : (
-          <Link href="/login">
+          <Link href={`/login?returnUrl=${encodeURIComponent('/guidebook/melbourne')}`}>
             <button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
               LOGIN
             </button>
@@ -419,28 +435,53 @@ export default function MelbourneGuidebookPage() {
             </button>
           </div>
 
-          {/* Map Toggle Button */}
-          <button
-            onClick={() => setShowMap(!showMap)}
-            className={`p-4 rounded-xl transition-all duration-300 ${
-              showMap
-                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
-            }`}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-          </button>
+          {/* Map and Favorites Toggle Buttons */}
+          <div className="flex items-center gap-3">
+            {/* Map Toggle Button */}
+            <button
+              onClick={() => setShowMap(!showMap)}
+              className={`p-4 rounded-xl transition-all duration-300 ${
+                showMap
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+              }`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </button>
+            
+            {/* Favorites Toggle Button */}
+            <button
+              onClick={() => setShowFavorites(!showFavorites)}
+              className={`p-4 rounded-xl transition-all duration-300 relative ${
+                showFavorites
+                  ? 'bg-red-500 text-white shadow-lg shadow-red-500/25'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+              }`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              {/* Favorites count badge */}
+              {favorites.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-white text-red-500 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg">
+                  {favorites.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Content Area */}
         <div className="space-y-8">
-          {/* Map Section - Full Width When Active */}
+          {/* Map Section - Only show when map is active */}
           {showMap && (
             <div className="w-full">
-              <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100">
-                <div className="h-[500px] w-full">
+              <div className={`grid gap-6 h-[600px] ${showFavorites ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                <div className={`flex flex-col ${showFavorites ? 'lg:col-span-2' : 'col-span-1'}`}>
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 flex-1">
+                    <div className="h-full w-full">
                   {isLoaded ? (
                     <GoogleMap
                       mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -506,12 +547,26 @@ export default function MelbourneGuidebookPage() {
                       </div>
                     </div>
                   )}
+                    </div>
+                  </div>
+                  
                 </div>
+                
+                {showFavorites && (
+                  <div className="lg:col-span-1 flex flex-col">
+                    <FavoritesPanel 
+                      favorites={favorites}
+                      isLoading={favoritesLoading}
+                      onRemoveFavorite={removeFromFavorites}
+                      processingItems={processingItems}
+                    />
+                  </div>
+                )}
               </div>
               
-              {/* Selected Attraction Info Panel */}
+              {/* Selected Attraction Info Panel - Below the map and favorites */}
               {selectedAttraction && (
-                <div className="mt-4 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
                       <div className="w-16 h-16 rounded-xl overflow-hidden">
@@ -544,13 +599,13 @@ export default function MelbourneGuidebookPage() {
                         </div>
                         <button 
                           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                            addedItems.has(selectedAttraction.id)
+                            isFavorited(selectedAttraction.id)
                               ? 'bg-green-600 hover:bg-green-700 text-white'
                               : 'bg-blue-600 hover:bg-blue-700 text-white'
                           }`}
-                          onClick={() => handleAddToList(selectedAttraction.id, selectedAttraction.name)}
+                          onClick={() => handleAddToList(selectedAttraction)}
                         >
-                          {addedItems.has(selectedAttraction.id) ? 'Move from List' : 'Add to MyList'}
+                          {isFavorited(selectedAttraction.id) ? 'Move from List' : 'Add to MyList'}
                         </button>
                         <button 
                           className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200 hover:bg-gray-300 text-gray-700 transition-all duration-200"
@@ -563,6 +618,32 @@ export default function MelbourneGuidebookPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Favorites Panel - Show independently when not in map view */}
+          {!showMap && showFavorites && (
+            <div className="w-full">
+              <div className="grid gap-6 h-[600px] grid-cols-1 lg:grid-cols-3">
+                <div className="lg:col-span-2 flex flex-col">
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center flex-1 flex flex-col justify-center">
+                    <div className="text-gray-400 mb-6">
+                      <svg className="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Your Favorites</h3>
+                    <p className="text-gray-600 leading-relaxed">View and manage your favorite attractions. Click the map button to see them on the interactive map.</p>
+                  </div>
+                </div>
+                <div className="lg:col-span-1">
+                  <FavoritesPanel 
+                    favorites={favorites}
+                    isLoading={favoritesLoading}
+                    onRemoveFavorite={removeFromFavorites}
+                  />
+                </div>
+              </div>
             </div>
           )}
 

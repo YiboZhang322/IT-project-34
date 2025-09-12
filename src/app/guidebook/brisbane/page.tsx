@@ -314,7 +314,7 @@ export default function BrisbaneGuidebookPage() {
             </button>
           </div>
         ) : (
-          <Link href="/login">
+          <Link href={`/login?returnUrl=${encodeURIComponent('/guidebook/brisbane')}`}>
             <button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
               LOGIN
             </button>
