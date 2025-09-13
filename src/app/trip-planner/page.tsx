@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,8 +51,25 @@ export default function TripPlanner() {
     info('Logged out', 'You have been successfully logged out.');
   };
 
+  // Load saved data from localStorage
+  useEffect(() => {
+    const savedTripData = localStorage.getItem('tripData');
+    if (savedTripData) {
+      try {
+        const parsedData = JSON.parse(savedTripData);
+        setTripData(parsedData);
+      } catch (error) {
+        console.error('Error loading saved trip data:', error);
+      }
+    }
+  }, []);
+
   const updateTripData = (updates: Partial<TripData>) => {
-    setTripData(prev => ({ ...prev, ...updates }));
+    const newData = { ...tripData, ...updates };
+    setTripData(newData);
+    
+    // Auto-save to localStorage
+    localStorage.setItem('tripData', JSON.stringify(newData));
   };
 
   const renderDetailsTab = () => (
@@ -270,10 +287,8 @@ export default function TripPlanner() {
   );
 
   const handleStartPlanning = () => {
-    const specialNotesText = tripData.specialNotes ? `\nSpecial Notes: ${tripData.specialNotes}` : '';
-    const formattedTotalCost = tripData.totalCost ? tripData.totalCost.replace(/(\d+[^$]*)\s*\$/, '$$$1') : '';
-    const childrenCount = tripData.children === -1 ? 0 : tripData.children;
-    alert(`🎉 Trip Planning Started!\n\nDestination: ${tripData.destination}\nTransportation: ${tripData.toDestination}\nDeparture Date: ${tripData.departureDate}\nReturn Date: ${tripData.returnDate}\nAdults: ${tripData.adults}\nChildren: ${childrenCount}\nBudget Type: ${tripData.budgetType}\nTotal Cost: ${formattedTotalCost}\nFood Preference: ${tripData.foodPreference}${specialNotesText}`);
+    // Navigate to smart planning page
+    window.location.href = '/smart-planning';
   };
 
   return (
@@ -293,8 +308,8 @@ export default function TripPlanner() {
         
                   <nav className="flex items-center gap-10">
             <Link href="/" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">HOME</Link>
-            <Link href="/guidebook" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">GUIDEBOOK</Link>
-            <Link href="/map" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MAP</Link>
+            <Link href="/guidebook" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">ATTRACTIONS</Link>
+            <Link href="/smart-planning" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MY PLANS</Link>
           </nav>
         
         {isAuthenticated ? (

@@ -290,8 +290,8 @@ export default function PerthGuidebookPage() {
         
         <nav className="flex items-center gap-10">
           <Link href="/" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">HOME</Link>
-          <Link href="/guidebook" className="text-orange-400 font-medium text-lg tracking-wide">GUIDEBOOK</Link>
-          <Link href="/map" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MAP</Link>
+          <Link href="/guidebook" className="text-orange-400 font-medium text-lg tracking-wide">ATTRACTIONS</Link>
+          <Link href="/smart-planning" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MY PLANS</Link>
         </nav>
         
         {isAuthenticated ? (

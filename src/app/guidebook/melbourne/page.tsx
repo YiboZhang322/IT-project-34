@@ -306,8 +306,8 @@ export default function MelbourneGuidebookPage() {
         
         <nav className="flex items-center gap-10">
           <Link href="/" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">HOME</Link>
-          <Link href="/guidebook" className="text-orange-400 font-medium text-lg tracking-wide">GUIDEBOOK</Link>
-          <Link href="/map" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MAP</Link>
+          <Link href="/guidebook" className="text-orange-400 font-medium text-lg tracking-wide">ATTRACTIONS</Link>
+          <Link href="/smart-planning" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MY PLANS</Link>
         </nav>
         
         {isAuthenticated ? (
@@ -435,7 +435,7 @@ export default function MelbourneGuidebookPage() {
             </button>
           </div>
 
-          {/* Map and Favorites Toggle Buttons */}
+          {/* Map, Favorites, and Smart Planning Buttons */}
           <div className="flex items-center gap-3">
             {/* Map Toggle Button */}
             <button
@@ -470,6 +470,24 @@ export default function MelbourneGuidebookPage() {
                 </span>
               )}
             </button>
+
+            {/* Smart Planning Button */}
+            <Link href="/smart-planning">
+              <button
+                className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${
+                  favorites.length > 0
+                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+                disabled={favorites.length === 0}
+                title={favorites.length === 0 ? 'Please select some attractions first' : 'Create your personalized trip plan'}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {favorites.length > 0 ? 'Create My Trip Plan' : 'Start Planning'}
+              </button>
+            </Link>
           </div>
         </div>
 

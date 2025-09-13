@@ -112,14 +112,14 @@ export default function UserProfileDropdown({ className = '', variant = 'default
             </Link>
 
             <Link 
-              href="/trip-planner"
+              href="/smart-planning"
               className="flex items-center gap-3 px-6 py-3 text-white/90 hover:bg-white/5 transition-colors duration-200 group"
               onClick={() => setIsOpen(false)}
             >
               <svg className="w-5 h-5 text-white/60 group-hover:text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              <span className="font-medium">My Trips</span>
+              <span className="font-medium">My Plans</span>
             </Link>
 
             <Link 
@@ -130,7 +130,7 @@ export default function UserProfileDropdown({ className = '', variant = 'default
               <svg className="w-5 h-5 text-white/60 group-hover:text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              <span className="font-medium">Guidebook</span>
+              <span className="font-medium">Attractions</span>
             </Link>
 
             <div className="border-t border-white/10 my-2"></div>
