@@ -145,7 +145,7 @@ export default function MelbourneGuidebookPage() {
 
   const attractions: Attraction[] = [
     {
-      id: '1',
+      id: 'melbourne-1',
       name: 'Flinders Street Station',
       description: 'An iconic railway station known for its distinctive dome and clock tower.',
       image: '/flinders-street.png',
@@ -155,7 +155,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9671
     },
     {
-      id: '2',
+      id: 'melbourne-2',
       name: 'Federation Square',
       description: 'A modern public space with a unique, deconstructed design.',
       image: '/federation-square.png',
@@ -165,7 +165,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9690
     },
     {
-      id: '3',
+      id: 'melbourne-3',
       name: 'Melbourne Cricket Ground (MCG)',
       description: 'A massive stadium and cultural landmark for Australian sports.',
       image: '/MCG.png',
@@ -175,7 +175,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9834
     },
     {
-      id: '4',
+      id: 'melbourne-4',
       name: 'Royal Exhibition Building',
       description: 'A magnificent 19th-century building and a UNESCO World Heritage site.',
       image: '/Royal Exhibition.jpg',
@@ -185,7 +185,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9717
     },
     {
-      id: '5',
+      id: 'melbourne-5',
       name: 'Shrine of Remembrance',
       description: 'A powerful memorial honoring Australia\'s war veterans.',
       image: '/shrine-of-remembrance.jpeg',
@@ -195,7 +195,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9739
     },
     {
-      id: '6',
+      id: 'melbourne-6',
       name: 'Block Arcade',
       description: 'A beautifully preserved Victorian-era shopping arcade with mosaic floors.',
       image: '/street-art.jpeg',
@@ -205,7 +205,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9633
     },
     {
-      id: '7',
+      id: 'melbourne-7',
       name: 'Eureka Tower',
       description: 'A skyscraper offering breathtaking panoramic views of the city.',
       image: '/skyscrapers.jpeg',
@@ -215,7 +215,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9648
     },
     {
-      id: '8',
+      id: 'melbourne-8',
       name: 'St Paul\'s Cathedral',
       description: 'A stunning Neo-Gothic cathedral directly across from Federation Square.',
       image: '/cathedral.jpeg',
@@ -225,7 +225,7 @@ export default function MelbourneGuidebookPage() {
       lng: 144.9677
     },
     {
-      id: '9',
+      id: 'melbourne-9',
       name: 'Hosier Lane',
       description: 'A world-famous laneway covered in vibrant, ever-changing street art.',
       image: '/unknown-building.jpeg',

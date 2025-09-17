@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
+import User, { IAttraction } from '@/models/User';
 
 export async function DELETE(request: NextRequest) {
   const JWT_SECRET = process.env.JWT_SECRET;
@@ -52,7 +52,7 @@ export async function DELETE(request: NextRequest) {
 
     // Remove attraction from favorites
     const initialLength = user.favorites.length;
-    user.favorites = user.favorites.filter(fav => fav.id !== attractionId);
+    user.favorites = user.favorites.filter((fav: IAttraction) => fav.id !== attractionId);
     
     if (user.favorites.length === initialLength) {
       return NextResponse.json(

@@ -27,7 +27,7 @@ export default function SmartPlanningPage() {
   const { user, isAuthenticated, logout } = useAuth();
   const { info, error } = useToastContext();
   const router = useRouter();
-  const { favorites, isLoading: favoritesLoading } = useFavorites();
+  const { favorites, isLoading: favoritesLoading, removeFromFavorites, processingItems } = useFavorites();
   const [tripData, setTripData] = useState<TripData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
@@ -367,7 +367,7 @@ export default function SmartPlanningPage() {
       {favorites.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {favorites.slice(0, 6).map((attraction) => (
-            <div key={attraction.id} className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
+            <div key={attraction.id} className="bg-gray-50 rounded-xl p-4 flex items-center gap-3 group hover:bg-gray-100 transition-colors">
               <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                 <Image
                   src={attraction.image}
@@ -381,6 +381,24 @@ export default function SmartPlanningPage() {
                 <h3 className="font-semibold text-gray-900 text-sm truncate">{attraction.name}</h3>
                 <p className="text-gray-600 text-xs truncate">{attraction.city}</p>
               </div>
+              <button
+                onClick={() => removeFromFavorites(attraction.id)}
+                disabled={processingItems.has(attraction.id)}
+                className={`flex-shrink-0 p-1 transition-colors opacity-0 group-hover:opacity-100 ${
+                  processingItems.has(attraction.id)
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-gray-400 hover:text-red-500'
+                }`}
+                title={processingItems.has(attraction.id) ? "Removing..." : "Remove from favorites"}
+              >
+                {processingItems.has(attraction.id) ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </button>
             </div>
           ))}
           {favorites.length > 6 && (
@@ -603,7 +621,7 @@ export default function SmartPlanningPage() {
                     {!getCompletionStatus().attractionsSelected && (
                       <Link 
                         href="/guidebook"
-                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
