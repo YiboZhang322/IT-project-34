@@ -476,7 +476,7 @@ export default function MelbourneGuidebookPage() {
               <button
                 className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${
                   favorites.length > 0
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                     : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}
                 disabled={favorites.length === 0}

@@ -8,6 +8,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import UserAvatar from '@/components/UserAvatar';
 import { useToastContext } from '@/contexts/ToastContext';
 import { useFavorites } from '@/hooks/useFavorites';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TripData {
   destination: string;
@@ -23,6 +42,22 @@ interface TripData {
   specialNotes: string;
 }
 
+interface Activity {
+  id: string;
+  time: string;
+  activity: string;
+  location: string;
+  type: 'breakfast' | 'attraction' | 'meal' | 'custom';
+}
+
+interface DayPlan {
+  day: number;
+  date: string;
+  activities: Activity[];
+}
+
+type PlanningMode = 'smart' | 'custom';
+
 export default function SmartPlanningPage() {
   const { user, isAuthenticated, logout } = useAuth();
   const { info, error } = useToastContext();
@@ -31,6 +66,26 @@ export default function SmartPlanningPage() {
   const [tripData, setTripData] = useState<TripData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
+  const [planningMode, setPlanningMode] = useState<PlanningMode>('smart');
+  const [customPlan, setCustomPlan] = useState<DayPlan[]>([]);
+  const [editingActivity, setEditingActivity] = useState<{ dayIndex: number; activityIndex: number; activity: Activity } | null>(null);
+  const [showAddActivityModal, setShowAddActivityModal] = useState<{ dayIndex: number } | null>(null);
+  const [showEditActivityModal, setShowEditActivityModal] = useState<{ dayIndex: number; activityIndex: number; activity: Activity } | null>(null);
+  const [newActivity, setNewActivity] = useState({ time: '', activity: '', location: '' });
+  const [editActivity, setEditActivity] = useState({ time: '', activity: '', location: '' });
+  const [showCustomPlan, setShowCustomPlan] = useState(false);
+  const [isAddingActivity, setIsAddingActivity] = useState(false);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleLogout = () => {
     logout();
@@ -55,7 +110,301 @@ export default function SmartPlanningPage() {
     localStorage.removeItem('tripData');
     setTripData(null);
     setGeneratedPlan(null);
+    setCustomPlan([]);
+    setPlanningMode('smart');
+    setShowCustomPlan(false);
     info('Data Cleared', 'All trip data has been cleared. You can start fresh!');
+  };
+
+  // Handle drag end for custom planning
+  const handleDragEnd = (event: DragEndEvent, dayIndex: number) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setCustomPlan((prevPlan) => {
+        const newPlan = [...prevPlan];
+        const oldIndex = newPlan[dayIndex].activities.findIndex((activity) => activity.id === active.id);
+        const newIndex = newPlan[dayIndex].activities.findIndex((activity) => activity.id === over?.id);
+        
+        newPlan[dayIndex].activities = arrayMove(newPlan[dayIndex].activities, oldIndex, newIndex);
+        return newPlan;
+      });
+    }
+  };
+
+  // Initialize custom plan from favorites
+  const initializeCustomPlan = () => {
+    if (!tripData || favorites.length === 0) return;
+    
+    const days = calculateDuration(tripData.departureDate, tripData.returnDate);
+    const newPlan: DayPlan[] = [];
+
+    for (let day = 1; day <= days; day++) {
+      const dayAttractions = favorites.slice(
+        (day - 1) * Math.ceil(favorites.length / days),
+        day * Math.ceil(favorites.length / days)
+      );
+      
+      const activities: Activity[] = [
+        {
+          id: `breakfast-${day}`,
+          time: '9:00 AM',
+          activity: 'Breakfast at Hotel',
+          location: 'Hotel',
+          type: 'breakfast'
+        },
+        ...dayAttractions.map((attraction, index) => ({
+          id: `attraction-${day}-${index}`,
+          time: `${10 + index * 2}:00 ${index % 2 === 0 ? 'AM' : 'PM'}`,
+          activity: `Visit ${attraction.name}`,
+          location: attraction.name,
+          type: 'attraction' as const
+        })),
+        {
+          id: `dinner-${day}`,
+          time: '7:00 PM',
+          activity: 'Dinner',
+          location: 'Local Restaurant',
+          type: 'meal'
+        }
+      ];
+
+      newPlan.push({
+        day,
+        date: new Date(new Date(tripData.departureDate).getTime() + (day - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        activities
+      });
+    }
+
+    setCustomPlan(newPlan);
+    setPlanningMode('custom');
+    setShowCustomPlan(true);
+    
+    // Auto scroll to custom plan section after a short delay
+    setTimeout(() => {
+      const customPlanElement = document.getElementById('custom-plan-section');
+      if (customPlanElement) {
+        customPlanElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 100);
+  };
+
+  // Add custom activity
+  const addCustomActivity = (dayIndex: number, activity: Omit<Activity, 'id'>) => {
+    // Generate a more unique ID with performance.now() for higher precision
+    const uniqueId = `custom-${performance.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.floor(Math.random() * 10000)}`;
+    
+    const newActivity: Activity = {
+      ...activity,
+      id: uniqueId
+    };
+
+    setCustomPlan((prevPlan) => {
+      const newPlan = [...prevPlan];
+      
+      // Double check for duplicates before adding
+      const existingActivity = newPlan[dayIndex].activities.find(
+        act => act.time === newActivity.time && 
+               act.activity === newActivity.activity && 
+               act.location === newActivity.location
+      );
+      
+      if (!existingActivity) {
+        newPlan[dayIndex].activities.push(newActivity);
+      }
+      
+      return newPlan;
+    });
+  };
+
+  // Update activity
+  const updateActivity = (dayIndex: number, activityIndex: number, updatedActivity: Activity) => {
+    setCustomPlan((prevPlan) => {
+      const newPlan = [...prevPlan];
+      newPlan[dayIndex].activities[activityIndex] = updatedActivity;
+      return newPlan;
+    });
+  };
+
+  // Delete activity
+  const deleteActivity = (dayIndex: number, activityIndex: number) => {
+    setCustomPlan((prevPlan) => {
+      const newPlan = [...prevPlan];
+      newPlan[dayIndex].activities.splice(activityIndex, 1);
+      return newPlan;
+    });
+  };
+
+  // Handle add activity modal
+  const handleAddActivity = (dayIndex: number) => {
+    setShowAddActivityModal({ dayIndex });
+    setNewActivity({ time: '', activity: '', location: '' });
+  };
+
+  const handleSaveActivity = async () => {
+    if (isAddingActivity || !showAddActivityModal || !newActivity.time || !newActivity.activity || !newActivity.location) {
+      return;
+    }
+    
+    setIsAddingActivity(true);
+    
+    try {
+      // Prevent duplicate submissions
+      const dayIndex = showAddActivityModal.dayIndex;
+      
+      // Additional check: verify no duplicate activity exists in the current day
+      const currentDayActivities = customPlan[dayIndex]?.activities || [];
+      const isDuplicate = currentDayActivities.some(activity => 
+        activity.time === newActivity.time && 
+        activity.activity === newActivity.activity && 
+        activity.location === newActivity.location
+      );
+      
+      if (!isDuplicate) {
+        addCustomActivity(dayIndex, {
+          time: newActivity.time,
+          activity: newActivity.activity,
+          location: newActivity.location,
+          type: 'custom'
+        });
+      }
+      
+      // Clear modal and form immediately
+      setShowAddActivityModal(null);
+      setNewActivity({ time: '', activity: '', location: '' });
+    } finally {
+      setIsAddingActivity(false);
+    }
+  };
+
+  const handleCancelActivity = () => {
+    setShowAddActivityModal(null);
+    setNewActivity({ time: '', activity: '', location: '' });
+  };
+
+  // Handle edit activity modal
+  const handleEditActivity = (activity: Activity, dayIndex: number, activityIndex: number) => {
+    setShowEditActivityModal({ dayIndex, activityIndex, activity });
+    setEditActivity({ 
+      time: activity.time, 
+      activity: activity.activity, 
+      location: activity.location 
+    });
+  };
+
+  const handleSaveEditActivity = () => {
+    if (showEditActivityModal && editActivity.time && editActivity.activity && editActivity.location) {
+      updateActivity(showEditActivityModal.dayIndex, showEditActivityModal.activityIndex, {
+        ...showEditActivityModal.activity,
+        time: editActivity.time,
+        activity: editActivity.activity,
+        location: editActivity.location
+      });
+      setShowEditActivityModal(null);
+      setEditActivity({ time: '', activity: '', location: '' });
+    }
+  };
+
+  const handleCancelEditActivity = () => {
+    setShowEditActivityModal(null);
+    setEditActivity({ time: '', activity: '', location: '' });
+  };
+
+  // Close custom planning
+  const closeCustomPlanning = () => {
+    setShowCustomPlan(false);
+    // Keep the planning mode as 'custom' to avoid scrolling to top
+    // setPlanningMode('smart');
+  };
+
+  // Sortable Activity Component
+  const SortableActivity = ({ 
+    activity, 
+    dayIndex, 
+    activityIndex, 
+    onEdit, 
+    onDelete 
+  }: { 
+    activity: Activity; 
+    dayIndex: number; 
+    activityIndex: number; 
+    onEdit: (activity: Activity) => void;
+    onDelete: () => void;
+  }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: activity.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition: isDragging ? 'none' : transition,
+      opacity: isDragging ? 0.8 : 1,
+      zIndex: isDragging ? 1000 : 'auto',
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`group relative flex items-center gap-4 bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-100/50 transition-all duration-300 ease-out ${
+          isDragging 
+            ? 'shadow-2xl scale-105 rotate-1 border-blue-200/50 bg-white' 
+            : 'hover:shadow-lg hover:scale-[1.02] hover:border-gray-200/80 hover:bg-white'
+        }`}
+      >
+        {/* Drag Handle - Apple Style */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-2 rounded-lg hover:bg-gray-50 transition-all duration-200 group-hover:text-gray-600"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </div>
+
+        {/* Time - Apple Typography */}
+        <div className="w-20 text-sm font-medium text-blue-600 flex-shrink-0 tracking-tight">
+          {activity.time}
+        </div>
+
+        {/* Activity Content - Apple Style */}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 text-base leading-5 tracking-tight">{activity.activity}</p>
+          <p className="text-sm text-gray-500 mt-0.5 leading-4">{activity.location}</p>
+        </div>
+
+        {/* Action Buttons - Apple Style */}
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+          <button
+            onClick={() => onEdit(activity)}
+            className="p-2 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+            title="Edit activity"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+            </svg>
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
+            title="Delete activity"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const isTripDataComplete = () => {
@@ -412,7 +761,7 @@ export default function SmartPlanningPage() {
           <p className="text-gray-600 mb-4">No attractions selected yet</p>
           <Link 
             href="/guidebook"
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -472,13 +821,13 @@ export default function SmartPlanningPage() {
       </div>
 
       <div className="mt-8 flex gap-4">
-        <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2">
+        <button className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Download Plan
         </button>
-        <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2">
+        <button className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
           </svg>
@@ -545,9 +894,45 @@ export default function SmartPlanningPage() {
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
             Smart Trip Planning
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
             Let us create your perfect itinerary based on your preferences and selected attractions
           </p>
+          
+          {/* Mode Selection - Apple Style */}
+          {getCompletionStatus().allComplete && (
+            <div className="flex justify-center mb-8">
+              <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-100/50 p-2">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setPlanningMode('smart')}
+                    className={`px-8 py-4 rounded-3xl font-semibold transition-all duration-300 flex items-center gap-3 ${
+                      planningMode === 'smart'
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl transform scale-105 shadow-orange-500/25'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50/80'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Smart Planning
+                  </button>
+                  <button
+                    onClick={() => setPlanningMode('custom')}
+                    className={`px-8 py-4 rounded-3xl font-semibold transition-all duration-300 flex items-center gap-3 ${
+                      planningMode === 'custom'
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl transform scale-105 shadow-orange-500/25'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50/80'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                    Custom Planning
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Clear data button */}
           {(tripData || favorites.length > 0) && (
@@ -565,78 +950,342 @@ export default function SmartPlanningPage() {
           )}
         </div>
 
-        {!generatedPlan ? (
-          <>
-            {renderProgressIndicator()}
-            {renderTripSummary()}
-            {renderFavoritesPreview()}
-            
-            <div className="text-center">
-              <button
-                onClick={generateSmartPlan}
-                disabled={!getCompletionStatus().allComplete || isGenerating}
-                className={`px-12 py-4 rounded-2xl font-bold text-xl transition-all duration-300 ${
-                  !getCompletionStatus().allComplete || isGenerating
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105'
-                }`}
-              >
-                {isGenerating ? (
-                  <div className="flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    Generating Your Plan...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Generate Smart Itinerary
+        {planningMode === 'smart' ? (
+          !generatedPlan ? (
+            <>
+              {renderProgressIndicator()}
+              {renderTripSummary()}
+              {renderFavoritesPreview()}
+              
+              <div className="text-center">
+                <button
+                  onClick={generateSmartPlan}
+                  disabled={!getCompletionStatus().allComplete || isGenerating}
+                  className={`px-12 py-4 rounded-2xl font-bold text-xl transition-all duration-300 ${
+                    !getCompletionStatus().allComplete || isGenerating
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 shadow-orange-500/25'
+                  }`}
+                >
+                  {isGenerating ? (
+                    <div className="flex items-center gap-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                      Generating Your Plan...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Generate Smart Itinerary
+                    </div>
+                  )}
+                </button>
+                
+                {!getCompletionStatus().allComplete && (
+                  <div className="mt-6 text-center">
+                    <p className="text-gray-600 mb-4">
+                      {!getCompletionStatus().tripComplete && !getCompletionStatus().attractionsSelected
+                        ? 'Please complete both your trip details and select some attractions first.'
+                        : !getCompletionStatus().tripComplete 
+                          ? 'Please complete your trip planning details first.'
+                          : 'Please select some attractions from the guidebook first.'
+                      }
+                    </p>
+                    <div className="flex gap-4 justify-center">
+                      {!getCompletionStatus().tripComplete && (
+                        <Link 
+                          href="/trip-planner"
+                          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl shadow-orange-500/25"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Complete Trip Details
+                        </Link>
+                      )}
+                      {!getCompletionStatus().attractionsSelected && (
+                        <Link 
+                          href="/guidebook"
+                          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl shadow-orange-500/25"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                          Browse Attractions
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 )}
-              </button>
-              
-              {!getCompletionStatus().allComplete && (
-                <div className="mt-6 text-center">
-                  <p className="text-gray-600 mb-4">
-                    {!getCompletionStatus().tripComplete && !getCompletionStatus().attractionsSelected
-                      ? 'Please complete both your trip details and select some attractions first.'
-                      : !getCompletionStatus().tripComplete 
-                        ? 'Please complete your trip planning details first.'
-                        : 'Please select some attractions from the guidebook first.'
-                    }
-                  </p>
-                  <div className="flex gap-4 justify-center">
-                    {!getCompletionStatus().tripComplete && (
-                      <Link 
-                        href="/trip-planner"
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2"
+              </div>
+            </>
+          ) : (
+            <div id="generated-plan">
+              {renderGeneratedPlan()}
+            </div>
+          )
+        ) : (
+          // Custom Planning Mode
+          <>
+            {!showCustomPlan ? (
+              <div className="space-y-8">
+                {renderProgressIndicator()}
+                {renderTripSummary()}
+                {renderFavoritesPreview()}
+                
+                <div className="text-center">
+                  <button
+                    onClick={initializeCustomPlan}
+                    disabled={!getCompletionStatus().allComplete}
+                    className={`px-12 py-4 rounded-2xl font-bold text-xl transition-all duration-300 ${
+                      !getCompletionStatus().allComplete
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 shadow-orange-500/25'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Start Custom Planning
+                    </div>
+                  </button>
+                  
+                  {!getCompletionStatus().allComplete && (
+                    <div className="mt-6 text-center">
+                      <p className="text-gray-600 mb-4">
+                        Please complete your trip details and select attractions first.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div id="custom-plan-section" className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl border border-white/60 p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Your Custom Trip Plan
+                  </h2>
+                  <button 
+                    onClick={closeCustomPlanning}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-8">
+                  {customPlan.map((day, dayIndex) => (
+                    <div key={day.day} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100/50 p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                            Day {day.day}
+                          </h3>
+                          <p className="text-base text-gray-600 mt-1">
+                            {new Date(day.date).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleAddActivity(dayIndex)}
+                          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 shadow-orange-500/25"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Add Activity
+                        </button>
+                      </div>
+                      
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => handleDragEnd(event, dayIndex)}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Complete Trip Details
-                      </Link>
-                    )}
-                    {!getCompletionStatus().attractionsSelected && (
-                      <Link 
-                        href="/guidebook"
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        Browse Attractions
-                      </Link>
-                    )}
+                        <SortableContext
+                          items={day.activities.map(activity => activity.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-3">
+                            {day.activities.map((activity, activityIndex) => (
+                              <SortableActivity
+                                key={activity.id}
+                                activity={activity}
+                                dayIndex={dayIndex}
+                                activityIndex={activityIndex}
+                                onEdit={(activity) => handleEditActivity(activity, dayIndex, activityIndex)}
+                                onDelete={() => deleteActivity(dayIndex, activityIndex)}
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Add Activity Modal */}
+        {showAddActivityModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Add Activity</h3>
+                  <button
+                    onClick={handleCancelActivity}
+                    className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                    <input
+                      type="text"
+                      value={newActivity.time}
+                      onChange={(e) => setNewActivity(prev => ({ ...prev, time: e.target.value }))}
+                      placeholder="e.g., 2:00 PM"
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-lg text-gray-900 placeholder-gray-400 bg-white"
+                      autoFocus
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Activity</label>
+                    <input
+                      type="text"
+                      value={newActivity.activity}
+                      onChange={(e) => setNewActivity(prev => ({ ...prev, activity: e.target.value }))}
+                      placeholder="e.g., Visit Museum"
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-lg text-gray-900 placeholder-gray-400 bg-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={newActivity.location}
+                      onChange={(e) => setNewActivity(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="e.g., National Museum"
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-lg text-gray-900 placeholder-gray-400 bg-white"
+                    />
                   </div>
                 </div>
-              )}
+                
+                <div className="flex gap-3 mt-8">
+                  <button
+                    onClick={handleCancelActivity}
+                    className="flex-1 px-6 py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveActivity}
+                    disabled={isAddingActivity || !newActivity.time || !newActivity.activity || !newActivity.location}
+                    className={`flex-1 px-6 py-3 rounded-2xl font-semibold transition-all duration-200 ${
+                      !isAddingActivity && newActivity.time && newActivity.activity && newActivity.location
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl shadow-orange-500/25'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {isAddingActivity ? 'Adding...' : 'Add Activity'}
+                  </button>
+                </div>
+              </div>
             </div>
-          </>
-        ) : (
-          <div id="generated-plan">
-            {renderGeneratedPlan()}
+          </div>
+        )}
+
+        {/* Edit Activity Modal */}
+        {showEditActivityModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Edit Activity</h3>
+                  <button
+                    onClick={handleCancelEditActivity}
+                    className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                    <input
+                      type="text"
+                      value={editActivity.time}
+                      onChange={(e) => setEditActivity(prev => ({ ...prev, time: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-lg text-gray-900 placeholder-gray-400 bg-white"
+                      autoFocus
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Activity</label>
+                    <input
+                      type="text"
+                      value={editActivity.activity}
+                      onChange={(e) => setEditActivity(prev => ({ ...prev, activity: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-lg text-gray-900 placeholder-gray-400 bg-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={editActivity.location}
+                      onChange={(e) => setEditActivity(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-lg text-gray-900 placeholder-gray-400 bg-white"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-8">
+                  <button
+                    onClick={handleCancelEditActivity}
+                    className="flex-1 px-6 py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEditActivity}
+                    disabled={!editActivity.time || !editActivity.activity || !editActivity.location}
+                    className={`flex-1 px-6 py-3 rounded-2xl font-semibold transition-all duration-200 ${
+                      editActivity.time && editActivity.activity && editActivity.location
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl shadow-orange-500/25'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>
