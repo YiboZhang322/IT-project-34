@@ -75,6 +75,7 @@ export default function SmartPlanningPage() {
   const [editActivity, setEditActivity] = useState({ time: '', activity: '', location: '' });
   const [showCustomPlan, setShowCustomPlan] = useState(false);
   const [isAddingActivity, setIsAddingActivity] = useState(false);
+  const [showAllAttractions, setShowAllAttractions] = useState(false);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -372,7 +373,7 @@ export default function SmartPlanningPage() {
         </div>
 
         {/* Time - Apple Typography */}
-        <div className="w-20 text-sm font-medium text-blue-600 flex-shrink-0 tracking-tight">
+        <div className="w-24 text-sm font-medium text-blue-600 flex-shrink-0 tracking-tight whitespace-nowrap">
           {activity.time}
         </div>
 
@@ -715,7 +716,7 @@ export default function SmartPlanningPage() {
       
       {favorites.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {favorites.slice(0, 6).map((attraction) => (
+          {(showAllAttractions ? favorites : favorites.slice(0, 6)).map((attraction) => (
             <div key={attraction.id} className="bg-gray-50 rounded-xl p-4 flex items-center gap-3 group hover:bg-gray-100 transition-colors">
               <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                 <Image
@@ -750,10 +751,21 @@ export default function SmartPlanningPage() {
               </button>
             </div>
           ))}
-          {favorites.length > 6 && (
-            <div className="bg-gray-100 rounded-xl p-4 flex items-center justify-center">
-              <span className="text-gray-600 font-medium">+{favorites.length - 6} more</span>
-            </div>
+          {favorites.length > 6 && !showAllAttractions && (
+            <button 
+              onClick={() => setShowAllAttractions(true)}
+              className="bg-gray-100 hover:bg-gray-200 rounded-xl p-4 flex items-center justify-center transition-colors duration-200 group"
+            >
+              <span className="text-gray-600 group-hover:text-gray-800 font-medium">+{favorites.length - 6} more</span>
+            </button>
+          )}
+          {showAllAttractions && favorites.length > 6 && (
+            <button 
+              onClick={() => setShowAllAttractions(false)}
+              className="bg-gray-100 hover:bg-gray-200 rounded-xl p-4 flex items-center justify-center transition-colors duration-200 group"
+            >
+              <span className="text-gray-600 group-hover:text-gray-800 font-medium">Show less</span>
+            </button>
           )}
         </div>
       ) : (
@@ -806,7 +818,7 @@ export default function SmartPlanningPage() {
             <div className="space-y-3">
               {day.activities.map((activity: any, index: number) => (
                 <div key={index} className="flex items-center gap-4 bg-white rounded-lg p-3">
-                  <div className="w-16 text-sm font-semibold text-blue-600 flex-shrink-0">
+                  <div className="w-24 text-sm font-semibold text-blue-600 flex-shrink-0 whitespace-nowrap">
                     {activity.time}
                   </div>
                   <div className="flex-1">
@@ -892,7 +904,7 @@ export default function SmartPlanningPage() {
       <main className="max-w-6xl mx-auto px-8 py-12">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            Smart Trip Planning
+            Trip Planning
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
             Let us create your perfect itinerary based on your preferences and selected attractions
