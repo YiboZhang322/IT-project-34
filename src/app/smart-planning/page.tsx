@@ -119,20 +119,20 @@ const foodConfigs = {
 // Dynamic time slots based on group composition and preferences
 const getTimeSlots = (hasElderly: boolean, budgetType: string) => {
   const baseSlots: any = {
-    earlyMorning: hasElderly ? ['8:00 AM', '8:30 AM'] : ['8:00 AM', '8:30 AM', '9:00 AM'],
+    earlyMorning: hasElderly ? ['8:00 AM', '8:30 AM'] : ['7:45 AM', '8:15 AM', '8:45 AM'],
     breakfast: hasElderly ? ['8:30 AM', '9:00 AM', '9:30 AM'] : ['8:30 AM', '9:00 AM', '9:30 AM', '10:00 AM'],
-    midMorning: ['10:30 AM', '11:00 AM', '11:30 AM'],
+    midMorning: ['10:15 AM', '10:45 AM', '11:15 AM'],
     lunch: ['12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM'],
-    afternoon: ['2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM'],
+    afternoon: ['2:15 PM', '2:45 PM', '3:15 PM', '3:45 PM'],
     lateAfternoon: ['4:30 PM', '5:00 PM', '5:30 PM'],
-    evening: hasElderly ? ['6:00 PM', '6:30 PM'] : ['6:00 PM', '6:30 PM', '7:00 PM'],
-    dinner: hasElderly ? ['7:00 PM', '7:30 PM'] : ['7:00 PM', '7:30 PM', '8:00 PM'],
-    night: hasElderly ? [] : ['8:30 PM', '9:00 PM']
+    evening: hasElderly ? ['6:00 PM', '6:30 PM'] : ['6:15 PM', '6:45 PM', '7:15 PM'],
+    dinner: hasElderly ? ['7:00 PM', '7:30 PM'] : ['7:30 PM', '8:00 PM', '8:30 PM'],
+    night: hasElderly ? [] : ['9:00 PM', '9:30 PM', '10:00 PM']
   };
 
   if (budgetType === 'luxury') {
-    baseSlots.champagneHour = ['4:30 PM', '5:00 PM', '5:30 PM'];
-    baseSlots.lateEvening = ['9:30 PM'];
+    baseSlots.champagneHour = ['4:45 PM', '5:15 PM'];
+    baseSlots.lateEvening = ['10:00 PM', '10:30 PM'];
   }
 
   return baseSlots;
@@ -415,41 +415,60 @@ export default function SmartPlanningPage() {
          if (lunchVenue) {
            baseActivities.push({
              id: `lunch-${day}`,
-             time: timeSlots.lunch[0],
+             time: timeSlots.lunch[Math.floor(Math.random() * timeSlots.lunch.length)],
              activity: `Lunch at ${lunchVenue}`,
              location: lunchVenue,
              type: 'meal'
            });
          }
 
-         // Afternoon rest for elderly/luxury
-         if (tripData.hasElderly || tripData.budgetType === 'luxury') {
-           baseActivities.push({
-             id: `rest-${day}`,
-             time: timeSlots.afternoon[0],
-             activity: tripData.budgetType === 'luxury' ? 'Private Relaxation Time' : 'Comfortable Rest',
-             location: tripData.budgetType === 'luxury' ? 'Crown Casino Premium Lounge' : 'Hotel Lobby & Facilities',
-             type: 'custom'
-           });
+         // Afternoon rest for elderly/luxury, but not every day
+         if ((tripData.hasElderly || tripData.budgetType === 'luxury') && (day === 1 || day % 3 === 0)) {
+           const restOptions = [
+             { activity: tripData.budgetType === 'luxury' ? 'Private Relaxation Time' : 'Comfortable Rest', location: tripData.budgetType === 'luxury' ? 'Crown Casino Premium Lounge' : 'Hotel Lobby & Facilities' },
+             { activity: 'Quiet Time & Personal Break', location: 'Hotel Room or Quiet Area' },
+             { activity: 'Leisurely Coffee/Tea Break', location: 'Nearby Cafe with a View' }
+           ];
+           const selectedRest = getUniqueActivityCustom(restOptions, customUsedActivities);
+           if (selectedRest) {
+             baseActivities.push({
+               id: `rest-${day}`,
+               time: timeSlots.afternoon[Math.floor(Math.random() * timeSlots.afternoon.length)], // Randomize time
+               activity: selectedRest.activity,
+               location: selectedRest.location,
+               type: 'custom'
+             });
+           }
          }
 
-         // Special activity based on group
-         if ((tripData?.adults || 0) + (tripData?.children || 0) > 3) {
-           baseActivities.push({
-             id: `group-${day}`,
-             time: timeSlots.lateAfternoon[0],
-             activity: 'Group Activity & Photos',
-             location: 'Scenic Location',
-             type: 'custom'
-           });
-         } else if (tripData?.budgetType === 'luxury') {
-           baseActivities.push({
-             id: `luxury-${day}`,
-             time: timeSlots.lateAfternoon[0],
-             activity: 'Premium Melbourne Experience',
-             location: 'Crown Casino Melbourne',
-             type: 'custom'
-           });
+         // Special activity based on group, not every day
+         const isLargeGroup = (tripData?.adults || 0) + (tripData?.children || 0) > 3;
+         if ((isLargeGroup || tripData?.budgetType === 'luxury') && (day % 2 === 0)) { // Every other day
+             let specialActivityOptions: { activity: string; location: string }[] = [];
+             if (isLargeGroup) {
+                 specialActivityOptions = [
+                     { activity: 'Group Photo Session & Memory Making', location: 'Federation Square Melbourne' },
+                     { activity: 'Family Fun Time & Games', location: 'Royal Botanic Gardens Melbourne' },
+                     { activity: 'Group Shopping Experience', location: 'Collins Street Melbourne' }
+                 ];
+             } else if (tripData?.budgetType === 'luxury') {
+                 specialActivityOptions = [
+                     { activity: 'Champagne & Canapés Hour', location: 'Eureka 89 Bar Melbourne' },
+                     { activity: 'Premium Wine Tasting Experience', location: 'Crown Casino Melbourne' },
+                     { activity: 'Executive Lounge Relaxation', location: 'The Melbourne Club' }
+                 ];
+             }
+
+             const selectedSpecial = getUniqueActivityCustom(specialActivityOptions, customUsedActivities);
+             if (selectedSpecial) {
+                 baseActivities.push({
+                     id: `special-${day}`,
+                     time: timeSlots.lateAfternoon[Math.floor(Math.random() * timeSlots.lateAfternoon.length)], // Randomize
+                     activity: selectedSpecial.activity,
+                     location: selectedSpecial.location,
+                     type: 'custom'
+                 });
+             }
          }
 
          // Evening activity for non-elderly
@@ -612,31 +631,30 @@ export default function SmartPlanningPage() {
   // Update activity
   const updateActivity = (dayIndex: number, activityIndex: number, updatedActivity: Activity) => {
     setCustomPlan((prevPlan) => {
-      const newPlan = [...prevPlan];
-      
-      // Remove the old activity first
-      newPlan[dayIndex].activities.splice(activityIndex, 1);
-      
-      // Check for duplicates before adding the updated activity
-      const isDuplicate = newPlan[dayIndex].activities.find(
-        act => act.time === updatedActivity.time && 
-               act.activity === updatedActivity.activity && 
-               act.location === updatedActivity.location
-      );
-      
-      if (!isDuplicate) {
-        // Add the updated activity
-        newPlan[dayIndex].activities.push(updatedActivity);
-        
-        // Sort activities by time
-        newPlan[dayIndex].activities.sort((a, b) => {
+      return prevPlan.map((day, dIndex) => {
+        if (dIndex !== dayIndex) {
+          return day;
+        }
+
+        // For the target day, create a new list of activities
+        // by replacing the one at activityIndex
+        const newActivities = day.activities.map((act, aIndex) =>
+          aIndex === activityIndex ? updatedActivity : act
+        );
+
+        // Sort the activities by time after updating
+        newActivities.sort((a, b) => {
           const timeA = new Date(`1970-01-01 ${a.time}`);
           const timeB = new Date(`1970-01-01 ${b.time}`);
           return timeA.getTime() - timeB.getTime();
         });
-      }
-      
-      return newPlan;
+
+        // Return the updated day
+        return {
+          ...day,
+          activities: newActivities,
+        };
+      });
     });
   };
 
@@ -1219,15 +1237,23 @@ export default function SmartPlanningPage() {
           });
         }
 
-        // Post-lunch rest (for elderly or luxury)
-        if (tripData.hasElderly || tripData.budgetType === 'luxury') {
-          activities.push({
-            id: `rest-${day}`,
-            time: timeSlots.afternoon[0],
-            activity: tripData.budgetType === 'luxury' ? 'Private Lounge Relaxation' : 'Comfortable Rest Break',
-            location: tripData.budgetType === 'luxury' ? 'Premium Lounge' : 'Hotel Lobby',
-            type: 'custom',
-          });
+        // Post-lunch rest (for elderly or luxury), not every day and varied
+        if ((tripData.hasElderly || tripData.budgetType === 'luxury') && (day === 1 || day % 3 === 1)) {
+          const restOptions = [
+            { activity: tripData.budgetType === 'luxury' ? 'Private Lounge Relaxation' : 'Comfortable Rest Break', location: tripData.budgetType === 'luxury' ? 'Premium Lounge' : 'Hotel Lobby' },
+            { activity: 'Power Nap & Recharge', location: 'Hotel Room' },
+            { activity: 'Relaxed Reading Time', location: 'Hotel Garden or Lounge' }
+          ];
+          const selectedRest = getUniqueActivity(restOptions, usedActivities);
+          if (selectedRest) {
+            activities.push({
+              id: `rest-${day}`,
+              time: timeSlots.afternoon[Math.floor(Math.random() * timeSlots.afternoon.length)],
+              activity: selectedRest.activity,
+              location: selectedRest.location,
+              type: 'custom',
+            });
+          }
         }
 
         // Afternoon attractions
