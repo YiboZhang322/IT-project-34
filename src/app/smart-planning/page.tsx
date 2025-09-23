@@ -159,6 +159,30 @@ export default function SmartPlanningPage() {
   const [recentlyDeleted, setRecentlyDeleted] = useState<{ activity: Activity; dayIndex: number; activityIndex: number; } | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Handle the timeout for undoing a delete
+  useEffect(() => {
+    // If there's an activity that was recently deleted, set a timeout to clear it
+    if (recentlyDeleted) {
+      // Clear any existing timeout to ensure we don't have multiple running
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+
+      // Set a new timeout
+      undoTimeoutRef.current = setTimeout(() => {
+        setRecentlyDeleted(null);
+      }, 6000); // 6 seconds to undo
+    }
+
+    // Cleanup function to clear the timeout if the component unmounts
+    // or if recentlyDeleted changes before the timeout finishes
+    return () => {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+    };
+  }, [recentlyDeleted]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -660,10 +684,6 @@ export default function SmartPlanningPage() {
 
   // Delete activity
   const deleteActivity = (dayIndex: number, activityIndex: number) => {
-    if (undoTimeoutRef.current) {
-      clearTimeout(undoTimeoutRef.current);
-    }
-
     setCustomPlan(prevPlan => {
       const newPlan = prevPlan.map(day => ({
         ...day,
@@ -672,17 +692,12 @@ export default function SmartPlanningPage() {
 
       const deletedActivity = newPlan[dayIndex].activities[activityIndex];
 
-      if (deletedActivity) {
-        setRecentlyDeleted({
-          activity: deletedActivity,
-          dayIndex,
-          activityIndex,
-        });
-
-        undoTimeoutRef.current = setTimeout(() => {
-          setRecentlyDeleted(null);
-        }, 6000); // 6 seconds to undo
-      }
+      // This will trigger the useEffect to set the timeout
+      setRecentlyDeleted({
+        activity: deletedActivity,
+        dayIndex,
+        activityIndex,
+      });
 
       newPlan[dayIndex].activities.splice(activityIndex, 1);
       return newPlan;
@@ -706,10 +721,6 @@ export default function SmartPlanningPage() {
       });
 
       setRecentlyDeleted(null);
-      if (undoTimeoutRef.current) {
-        clearTimeout(undoTimeoutRef.current);
-        undoTimeoutRef.current = null;
-      }
     }
   };
 
