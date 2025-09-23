@@ -7,6 +7,10 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToastContext } from '@/contexts/ToastContext'
 import UserAvatar from '@/components/UserAvatar'
 import { withAuth } from '@/contexts/AuthContext'
+import ChangePasswordModal from '@/components/ChangePasswordModal'
+import PrivacySettingsModal from '@/components/PrivacySettingsModal'
+import TravelInterestsModal from '@/components/TravelInterestsModal'
+import NotificationSettingsModal from '@/components/NotificationSettingsModal'
 
 function ProfilePage() {
   const { user, updateUser } = useAuth()
@@ -18,6 +22,7 @@ function ProfilePage() {
     email: user?.email || ''
   })
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [activeModal, setActiveModal] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -310,7 +315,7 @@ function ProfilePage() {
               <h3 className="text-2xl font-bold text-white">Account Settings</h3>
             </div>
             <div className="space-y-6">
-              <button className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
+              <button onClick={() => setActiveModal('changePassword')} className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-white text-base mb-1">Change Password</p>
@@ -322,7 +327,7 @@ function ProfilePage() {
                 </div>
               </button>
               
-              <button className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
+              <button onClick={() => setActiveModal('privacySettings')} className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-white text-base mb-1">Privacy Settings</p>
@@ -347,7 +352,7 @@ function ProfilePage() {
               <h3 className="text-2xl font-bold text-white">Trip Preferences</h3>
             </div>
             <div className="space-y-6">
-              <button className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
+              <button onClick={() => setActiveModal('travelInterests')} className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-white text-base mb-1">Travel Interests</p>
@@ -359,7 +364,7 @@ function ProfilePage() {
                 </div>
               </button>
               
-              <button className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
+              <button onClick={() => setActiveModal('notificationSettings')} className="w-full text-left p-6 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/10 group">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-white text-base mb-1">Notification Settings</p>
@@ -374,6 +379,11 @@ function ProfilePage() {
           </div>
         </div>
       </main>
+
+      <ChangePasswordModal isOpen={activeModal === 'changePassword'} onClose={() => setActiveModal(null)} />
+      <PrivacySettingsModal isOpen={activeModal === 'privacySettings'} onClose={() => setActiveModal(null)} />
+      <TravelInterestsModal isOpen={activeModal === 'travelInterests'} onClose={() => setActiveModal(null)} />
+      <NotificationSettingsModal isOpen={activeModal === 'notificationSettings'} onClose={() => setActiveModal(null)} />
     </div>
   )
 }
