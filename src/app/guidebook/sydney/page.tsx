@@ -340,7 +340,7 @@ export default function SydneyGuidebookPage() {
               ) : (
                 <Link
                   href={`/login?returnUrl=${encodeURIComponent('/guidebook/sydney')}`}
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   LOGIN
                 </Link>
@@ -693,7 +693,6 @@ export default function SydneyGuidebookPage() {
                     </svg>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">Restaurant Guide</h3>
-                  <p className="text-gray-600 leading-relaxed">Coming soon! We're curating the best dining experiences in Sydney.</p>
                 </div>
               </div>
             )}
@@ -707,17 +706,32 @@ export default function SydneyGuidebookPage() {
                     </svg>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">Hotel Guide</h3>
-                  <p className="text-gray-600 leading-relaxed">Coming soon! We're selecting the finest accommodations for your stay.</p>
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Pagination */}
+        <div className="flex justify-center mt-12">
+          <div className="flex items-center gap-2">
+            <button className="px-4 py-2 bg-orange-500 text-white rounded-lg font-semibold">« First</button>
+            <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300">‹</button>
+            <button className="px-4 py-2 bg-orange-500 text-white rounded-lg font-semibold">1</button>
+            <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300">2</button>
+            <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300">3</button>
+            <span className="px-4 py-2">...</span>
+            <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300">8</button>
+            <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300">9</button>
+            <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300">›</button>
+            <button className="px-4 py-2 bg-orange-500 text-white rounded-lg font-semibold">Last »</button>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
-      <footer className="w-full bg-black text-white">
-        <div className="max-w-7xl mx-auto px-8 py-8 border-t border-gray-800/50">
+      <footer className="w-full bg-black text-white mt-16">
+        <div className="max-w-7xl mx-auto px-8 py-12 border-t border-gray-800/50">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <Image
@@ -758,7 +772,7 @@ export default function SydneyGuidebookPage() {
             </div>
           </div>
           
-          <div className="text-center mt-6 text-gray-500 text-sm font-medium">
+          <div className="text-center mt-12 text-gray-500 text-sm font-medium">
             © 2025 GoPlanner - by Group 34
           </div>
         </div>

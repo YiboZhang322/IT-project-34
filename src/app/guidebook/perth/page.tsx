@@ -331,7 +331,7 @@ export default function PerthGuidebookPage() {
           </div>
         ) : (
           <Link href={`/login?returnUrl=${encodeURIComponent('/guidebook/perth')}`}>
-            <button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
+            <button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
               LOGIN
             </button>
           </Link>
@@ -682,7 +682,6 @@ export default function PerthGuidebookPage() {
                     </svg>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">Restaurant Guide</h3>
-                  <p className="text-gray-600 leading-relaxed">Coming soon! We're curating the best dining experiences in Perth.</p>
                 </div>
               </div>
             )}
@@ -696,7 +695,6 @@ export default function PerthGuidebookPage() {
                     </svg>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">Hotel Guide</h3>
-                  <p className="text-gray-600 leading-relaxed">Coming soon! We're selecting the finest accommodations for your stay.</p>
                 </div>
               </div>
             )}

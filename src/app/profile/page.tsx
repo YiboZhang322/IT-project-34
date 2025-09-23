@@ -134,7 +134,7 @@ function ProfilePage() {
       <main className="max-w-7xl mx-auto px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-white via-orange-400 to-white bg-clip-text text-transparent">
+          <h1 className="text-6xl font-bold mb-6 text-orange-500">
             Profile Settings
           </h1>
           <p className="text-white/70 text-xl max-w-2xl mx-auto leading-relaxed">
