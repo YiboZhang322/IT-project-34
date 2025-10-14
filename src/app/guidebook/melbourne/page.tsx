@@ -22,6 +22,14 @@ interface Attraction {
   rating: number;
   lat: number;
   lng: number;
+  populationData?: {
+    startTime: string;
+    endTime: string;
+    density: number;
+    min: number;
+    max: number;
+    note?: string;
+  };
 }
 
 const mapContainerStyle = {
@@ -53,6 +61,7 @@ export default function MelbourneGuidebookPage() {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedAttraction, setSelectedAttraction] = useState<Attraction | null>(null);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [hoveredAttractionId, setHoveredAttractionId] = useState<string | null>(null);
   
   // Use the favorites hook
   const { 
@@ -63,6 +72,34 @@ export default function MelbourneGuidebookPage() {
     removeFromFavorites,
     processingItems
   } = useFavorites();
+
+  const getDensityLevel = (density: number, min: number, max: number) => {
+    const percentage = (density - min) / (max - min);
+    if (percentage < 0.33) return { level: 'Low', color: 'text-green-400', bg: 'bg-green-500/20', progressColor: 'bg-green-400' };
+    if (percentage < 0.66) return { level: 'Moderate', color: 'text-yellow-400', bg: 'bg-yellow-500/20', progressColor: 'bg-yellow-400' };
+    return { level: 'High', color: 'text-red-400', bg: 'bg-red-500/20', progressColor: 'bg-red-400' };
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-AU', {
+        timeZone: 'Australia/Melbourne',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-AU', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'Australia/Sydney',
+    }).format(date);
+  };
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -152,7 +189,14 @@ export default function MelbourneGuidebookPage() {
       category: 'Must go',
       rating: 5,
       lat: -37.8183,
-      lng: 144.9671
+      lng: 144.9671,
+      populationData: {
+        startTime: '2025-10-02T23:30:00Z',
+        endTime: '2025-10-03T00:30:00Z',
+        density: 4800,
+        min: 500,
+        max: 8000,
+      }
     },
     {
       id: 'melbourne-2',
@@ -162,7 +206,14 @@ export default function MelbourneGuidebookPage() {
       category: 'Must go',
       rating: 5,
       lat: -37.8179,
-      lng: 144.9690
+      lng: 144.9690,
+      populationData: {
+        startTime: '2025-10-03T00:00:00Z',
+        endTime: '2025-10-03T01:00:00Z',
+        density: 3200,
+        min: 400,
+        max: 5000,
+      }
     },
     {
       id: 'melbourne-3',
@@ -172,7 +223,14 @@ export default function MelbourneGuidebookPage() {
       category: 'Must go',
       rating: 5,
       lat: -37.8200,
-      lng: 144.9834
+      lng: 144.9834,
+      populationData: {
+        startTime: '2025-10-03T00:00:00Z',
+        endTime: '2025-10-03T01:00:00Z',
+        density: 250,
+        min: 50,
+        max: 1500,
+      }
     },
     {
       id: 'melbourne-4',
@@ -182,7 +240,15 @@ export default function MelbourneGuidebookPage() {
       category: 'Must go',
       rating: 5,
       lat: -37.8047,
-      lng: 144.9717
+      lng: 144.9717,
+      populationData: {
+        startTime: '2025-06-18T22:30:00Z',
+        endTime: '2025-06-18T23:30:00Z',
+        density: 2750,
+        min: 300,
+        max: 3500,
+        note: 'Exam Day',
+      }
     },
     {
       id: 'melbourne-5',
@@ -192,7 +258,14 @@ export default function MelbourneGuidebookPage() {
       category: 'Popular',
       rating: 4,
       lat: -37.8304,
-      lng: 144.9739
+      lng: 144.9739,
+      populationData: {
+        startTime: '2025-10-02T23:30:00Z',
+        endTime: '2025-10-03T00:30:00Z',
+        density: 450,
+        min: 100,
+        max: 1000,
+      }
     },
     {
       id: 'melbourne-6',
@@ -202,7 +275,14 @@ export default function MelbourneGuidebookPage() {
       category: 'Popular',
       rating: 4,
       lat: -37.8162,
-      lng: 144.9633
+      lng: 144.9633,
+      populationData: {
+        startTime: '2025-10-02T22:30:00Z',
+        endTime: '2025-10-02T23:30:00Z',
+        density: 1100,
+        min: 200,
+        max: 2500,
+      }
     },
     {
       id: 'melbourne-7',
@@ -244,49 +324,150 @@ export default function MelbourneGuidebookPage() {
     ));
   };
 
-  const renderAttractionCard = (attraction: Attraction) => (
-    <div key={attraction.id} className="bg-white rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100/50 hover:border-gray-200/50 group hover:-translate-y-1 flex flex-col h-full">
-      <div className="relative">
-        <div className="aspect-[4/3] relative overflow-hidden">
-          <Image
-            src={attraction.image}
-            alt={attraction.name}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-700"
-          />
-        </div>
-        <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm ${
-          attraction.category === 'Must go' ? 'bg-green-500/90' : 'bg-orange-500/90'
-        }`}>
-          {attraction.category}
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      </div>
-      <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight group-hover:text-blue-600 transition-colors">{attraction.name}</h3>
-        <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-2 flex-grow">{attraction.description}</p>
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-1">
-            {renderStars(attraction.rating)}
+  const renderAttractionCard = (attraction: Attraction) => {
+    const { populationData } = attraction;
+
+    const densityInfo = populationData ? getDensityLevel(populationData.density, populationData.min, populationData.max) : null;
+    const densityPercentage = populationData ? ((populationData.density - populationData.min) / (populationData.max - populationData.min)) * 100 : 0;
+
+    return (
+      <div 
+        key={attraction.id} 
+        className="relative bg-white rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100/50 hover:border-gray-200/50 group hover:-translate-y-1 flex flex-col h-full"
+        onMouseLeave={() => populationData && setHoveredAttractionId(null)}
+      >
+        {populationData && hoveredAttractionId === attraction.id && (
+          <div className="absolute inset-0 z-20 bg-gray-900/70 backdrop-blur-xl text-white shadow-2xl animate-fade-in-down rounded-3xl flex flex-col border border-white/10">
+              <div className="relative z-10 flex flex-col h-full">
+                {/* Header with attraction name and refresh button */}
+                <div className="flex items-center justify-between p-6 border-b border-white/10">
+                  <div>
+                    {attraction.name === 'Royal Exhibition Building' ? (
+                      <div>
+                        <h4 className="text-xl font-bold tracking-tight leading-tight">Royal Exhibition</h4>
+                        <div className="flex items-baseline gap-2">
+                          <h4 className="text-xl font-bold tracking-tight leading-tight">Building</h4>
+                          {populationData.note && (
+                            <span className="bg-black/40 text-yellow-300 text-xs font-medium px-3 py-1 rounded-full">
+                              {populationData.note}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <h4 className="text-xl font-bold tracking-tight">{attraction.name}</h4>
+                    )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-gray-300 font-light">Live Population Density</span>
+                    </div>
+                  </div>
+                  <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                  </button>
+                </div>
+
+                {/* Main content area */}
+                <div className="flex-1 p-5 flex flex-col">
+                  {/* Population number display */}
+                  <div className="text-center mb-5 flex-shrink-0">
+                    <div className="flex items-baseline justify-center mb-2">
+                      <span className={`text-5xl font-light tracking-tighter ${densityInfo?.color}`}>
+                        {populationData.density.toLocaleString()}
+                      </span>
+                      <span className="text-base text-gray-400 ml-2 font-light">people</span>
+                    </div>
+                    <span className={`inline-block font-medium px-4 py-1.5 rounded-full text-xs ${densityInfo?.bg} ${densityInfo?.color} tracking-wide`}>
+                      {densityInfo?.level}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="mb-5 flex-shrink-0">
+                    <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className={`${densityInfo?.progressColor} h-1.5 rounded-full transition-all duration-1000 ease-out`} 
+                        style={{ width: `${densityPercentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-400 mt-1.5 font-light">
+                      <span>Min: {populationData.min.toLocaleString()}</span>
+                      <span>Max: {populationData.max.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Time and date info */}
+                  <div className="space-y-2.5 bg-white/5 rounded-xl p-3 flex-shrink-0 mt-auto">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Date</p>
+                        <p className="text-sm font-semibold">{new Date(populationData.startTime).toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Time (AEST)</p>
+                        <p className="text-sm font-semibold">
+                          {new Date(populationData.startTime).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(populationData.endTime).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        )}
+        <div 
+          className="relative"
+          onMouseEnter={() => populationData && setHoveredAttractionId(attraction.id)}
+        >
+          <div className="aspect-[4/3] relative overflow-hidden">
+            <Image
+              src={attraction.image}
+              alt={attraction.name}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-700"
+            />
           </div>
-          <button 
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap flex items-center gap-2 ${
-              isFavorited(attraction.id)
-                ? 'bg-green-600 hover:bg-green-700 active:bg-green-800 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
-            }`}
-            onClick={() => handleAddToList(attraction)}
-          >
-            {isFavorited(attraction.id) ? (
-              'Move from List'
-            ) : (
-              'Add To MyList'
-            )}
-          </button>
+          <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm ${
+            attraction.category === 'Must go' ? 'bg-green-500/90' : 'bg-orange-500/90'
+          }`}>
+            {attraction.category}
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        </div>
+        <div className="p-6 flex flex-col flex-grow">
+          <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight group-hover:text-blue-600 transition-colors">{attraction.name}</h3>
+          <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-2 flex-grow">{attraction.description}</p>
+          <div className="flex items-center justify-between mt-auto">
+            <div className="flex items-center gap-1">
+              {renderStars(attraction.rating)}
+            </div>
+            <button 
+              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap flex items-center gap-2 ${
+                isFavorited(attraction.id)
+                  ? 'bg-green-600 hover:bg-green-700 active:bg-green-800 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
+              }`}
+              onClick={() => handleAddToList(attraction)}
+            >
+              {isFavorited(attraction.id) ? (
+                'Move from List'
+              ) : (
+                'Add To MyList'
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
