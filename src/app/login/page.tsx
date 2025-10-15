@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   
-  const { login, isLoading, isAuthenticated, user } = useAuth()
+  const { login, isLoading, isAuthenticated } = useAuth()
   const { success, error: showError } = useToastContext()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -30,11 +30,12 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
+    
     if (!email || !password) {
       setError('Please fill in all fields')
       return
     }
+    
     if (password.length < 6) {
       setError('Password must be at least 6 characters')
       return
@@ -50,10 +51,6 @@ export default function LoginPage() {
       setError(loginResult.error || 'Login failed. Please try again.')
       showError('Login failed', loginResult.error || 'Something went wrong. Please try again.')
     }
-
-    // 兜底
-    setError('Login failed. Please try again.')
-    showError('Login failed', 'Something went wrong. Please try again.')
   }
 
   return (

@@ -70,13 +70,13 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
+    
     const validationError = validateForm()
     if (validationError) {
       setError(validationError)
       return
     }
-
+    
     try {
       const signupResult = await signup(formData.email, formData.password, formData.name)
       if (signupResult.success) {
@@ -88,7 +88,6 @@ export default function SignupPage() {
     } catch (error: any) {
       setError('Signup failed. Please try again.')
     }
-
   }
 
   return (

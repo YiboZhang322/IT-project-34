@@ -1,9 +1,6 @@
 'use client'
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import {
-  signUp, confirmSignUp, resendSignUpCode,
-  signIn, signOut, fetchAuthSession
-} from 'aws-amplify/auth'
 
 interface User {
   _id: string
@@ -26,7 +23,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -59,8 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } finally {
         setIsLoading(false)
       }
-    } catch { return null }
-  }
+    }
+
+    checkAuthStatus()
+  }, [])
 
   const login = async (email: string, password: string, rememberMe: boolean = false): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -136,11 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-    throw e
-  } finally {
-    setIsLoading(false)
   }
-}
 
   const logout = () => {
     setUser(null)
@@ -154,12 +153,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = async () => { await signOut(); setUser(null) }
-
-  const updateUser = (userData: Partial<User>) => { if (user) setUser({ ...user, ...userData }) }
-
-  const checkUserExists = (_email: string) => false
-
   const value: AuthContextType = {
     user,
     isLoading,
@@ -170,7 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateUser
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {
