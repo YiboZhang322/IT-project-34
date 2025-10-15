@@ -23,38 +23,6 @@ export default function SignupPage() {
   const { success } = useToastContext()
   const router = useRouter()
 
-  // Load saved form data only if returning from Terms/Privacy pages
-  useEffect(() => {
-    const returnedFromTerms = sessionStorage.getItem('returned_from_terms')
-    
-    if (returnedFromTerms === 'true') {
-      const savedFormData = localStorage.getItem('signup_form_data')
-      const savedAcceptTerms = localStorage.getItem('signup_accept_terms')
-      
-      if (savedFormData) {
-        try {
-          const parsedData = JSON.parse(savedFormData)
-          setFormData(parsedData)
-        } catch (error) {
-          console.error('Failed to parse saved form data:', error)
-        }
-      }
-      
-      if (savedAcceptTerms) {
-        setAcceptTerms(savedAcceptTerms === 'true')
-      }
-      
-      // Clear the flag after restoring data
-      sessionStorage.removeItem('returned_from_terms')
-    }
-    
-    // Always clear saved data when component mounts (except when returning from Terms/Privacy)
-    if (returnedFromTerms !== 'true') {
-      localStorage.removeItem('signup_form_data')
-      localStorage.removeItem('signup_accept_terms')
-    }
-  }, [])
-
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -70,12 +38,6 @@ export default function SignupPage() {
     }))
   }
 
-  // Save form data when navigating to Terms/Privacy pages
-  const handleTermsNavigation = () => {
-    localStorage.setItem('signup_form_data', JSON.stringify(formData))
-    localStorage.setItem('signup_accept_terms', acceptTerms.toString())
-    sessionStorage.setItem('returned_from_terms', 'true')
-  }
 
   const validateForm = () => {
     if (!formData.name.trim()) {
@@ -116,28 +78,15 @@ export default function SignupPage() {
     }
 
     try {
-      const ok = await signup(formData.email, formData.password, formData.name)
-      if (ok) {
-        // 清理本地保存的临时表单
-        localStorage.removeItem('signup_form_data')
-        localStorage.removeItem('signup_accept_terms')
-
-        // 提示并跳到验证码页
-        success('Check your email', 'We sent you a verification code.')
-        // 带上 email，方便确认页自动回填
-        router.push(`/confirm?email=${encodeURIComponent(formData.email)}`)
+      const signupResult = await signup(formData.email, formData.password, formData.name)
+      if (signupResult.success) {
+        success(`Welcome to GoPlanner, ${formData.name}!`, 'Your account has been created successfully.')
+        router.push('/')
+      } else {
+        setError(signupResult.error || 'Signup failed. Please try again.')
       }
     } catch (error: any) {
-      console.log('signup ui error:', error)
-      if (error.message === 'User already exists') {
-        setError('This email is already registered. Please use a different email or sign in instead.')
-      } else if (error.message === 'Weak password') {
-        setError('Password does not meet the pool policy.')
-      } else if (error.message === 'Client secret enabled') {
-        setError('Your User Pool App client has a client secret. Create a web client WITHOUT client secret.')
-      } else {
-        setError(error?.message || 'Registration failed. Please try again.')
-      }
+      setError('Signup failed. Please try again.')
     }
 
   }
@@ -348,7 +297,6 @@ export default function SignupPage() {
                   <Link 
                     href="/terms" 
                     className="text-orange-400 hover:text-orange-300 underline"
-                    onClick={handleTermsNavigation}
                   >
                     Terms of Service
                   </Link>
@@ -356,7 +304,6 @@ export default function SignupPage() {
                   <Link 
                     href="/privacy" 
                     className="text-orange-400 hover:text-orange-300 underline"
-                    onClick={handleTermsNavigation}
                   >
                     Privacy Policy
                   </Link>

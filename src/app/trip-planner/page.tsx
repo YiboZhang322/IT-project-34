@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,8 +51,25 @@ export default function TripPlanner() {
     info('Logged out', 'You have been successfully logged out.');
   };
 
+  // Load saved data from localStorage
+  useEffect(() => {
+    const savedTripData = localStorage.getItem('tripData');
+    if (savedTripData) {
+      try {
+        const parsedData = JSON.parse(savedTripData);
+        setTripData(parsedData);
+      } catch (error) {
+        console.error('Error loading saved trip data:', error);
+      }
+    }
+  }, []);
+
   const updateTripData = (updates: Partial<TripData>) => {
-    setTripData(prev => ({ ...prev, ...updates }));
+    const newData = { ...tripData, ...updates };
+    setTripData(newData);
+    
+    // Auto-save to localStorage
+    localStorage.setItem('tripData', JSON.stringify(newData));
   };
 
   const renderDetailsTab = () => (
@@ -270,10 +287,8 @@ export default function TripPlanner() {
   );
 
   const handleStartPlanning = () => {
-    const specialNotesText = tripData.specialNotes ? `\nSpecial Notes: ${tripData.specialNotes}` : '';
-    const formattedTotalCost = tripData.totalCost ? tripData.totalCost.replace(/(\d+[^$]*)\s*\$/, '$$$1') : '';
-    const childrenCount = tripData.children === -1 ? 0 : tripData.children;
-    alert(`🎉 Trip Planning Started!\n\nDestination: ${tripData.destination}\nTransportation: ${tripData.toDestination}\nDeparture Date: ${tripData.departureDate}\nReturn Date: ${tripData.returnDate}\nAdults: ${tripData.adults}\nChildren: ${childrenCount}\nBudget Type: ${tripData.budgetType}\nTotal Cost: ${formattedTotalCost}\nFood Preference: ${tripData.foodPreference}${specialNotesText}`);
+    // Navigate to smart planning page
+    window.location.href = '/smart-planning';
   };
 
   return (
@@ -293,8 +308,8 @@ export default function TripPlanner() {
         
                   <nav className="flex items-center gap-10">
             <Link href="/" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">HOME</Link>
-            <Link href="/guidebook" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">GUIDEBOOK</Link>
-            <Link href="/map" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MAP</Link>
+            <Link href="/guidebook" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">ATTRACTIONS</Link>
+            <Link href="/smart-planning" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MY PLANS</Link>
           </nav>
         
         {isAuthenticated ? (
@@ -311,14 +326,14 @@ export default function TripPlanner() {
               </div>
             <button 
               onClick={handleLogout}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white px-6 py-3 rounded-2xl transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white px-6 py-3 rounded-full transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               LOGOUT
             </button>
           </div>
         ) : (
                       <Link href="/login">
-              <button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
+              <button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
                 LOGIN
               </button>
             </Link>
@@ -415,7 +430,7 @@ export default function TripPlanner() {
             {activeTab === 'choice' && (
               <button 
                 onClick={handleStartPlanning}
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 px-8 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 active:scale-[0.98]"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-8 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98]"
               >
                 Start Planning
               </button>
@@ -425,7 +440,7 @@ export default function TripPlanner() {
       </div>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-8 py-12 border-t border-gray-800/50">
+      <footer className="max-w-7xl mx-auto px-8 py-8 border-t border-gray-800/50">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Image
@@ -466,7 +481,7 @@ export default function TripPlanner() {
           </div>
         </div>
         
-        <div className="text-center mt-12 text-gray-500 text-sm font-medium">
+        <div className="text-center mt-6 text-gray-500 text-sm font-medium">
           © 2025 GoPlanner - by Group 34
         </div>
       </footer>

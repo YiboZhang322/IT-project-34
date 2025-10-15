@@ -3,17 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import UserAvatar from "@/components/UserAvatar";
-import { useToastContext } from "@/contexts/ToastContext";
+import UserProfileDropdown from "@/components/UserProfileDropdown";
 
 export default function Home() {
-  const { user, isAuthenticated, logout } = useAuth()
-  const { info } = useToastContext()
-  
-  const handleLogout = () => {
-    logout()
-    info('Logged out', 'You have been successfully logged out.')
-  }
+  const { isAuthenticated } = useAuth()
   
   return (
     <div className="min-h-screen bg-black text-white">
@@ -32,32 +25,15 @@ export default function Home() {
         
         <nav className="flex items-center gap-10">
           <a href="#" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">HOME</a>
-          <a href="#" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">GUIDEBOOK</a>
-          <a href="#" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MAP</a>
+          <Link href="/guidebook" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">ATTRACTIONS</Link>
+          <Link href="/smart-planning" className="text-white hover:text-orange-400 transition-all duration-200 font-medium text-lg tracking-wide hover:scale-105">MY PLANS</Link>
         </nav>
         
         {isAuthenticated ? (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10 hover:border-white/20 transition-all duration-300">
-              <UserAvatar 
-                src={user?.avatar}
-                name={user?.name || 'User'}
-                size="md"
-                showOnlineStatus={true}
-                isOnline={true}
-              />
-              <span className="text-white font-medium text-sm">Welcome, {user?.name}</span>
-            </div>
-            <button 
-              onClick={handleLogout}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white px-6 py-3 rounded-full transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              LOGOUT
-            </button>
-          </div>
+          <UserProfileDropdown variant="large" />
         ) : (
           <Link href="/login">
-            <button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
+            <button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white px-8 py-3 rounded-full transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
               LOGIN
             </button>
           </Link>
@@ -155,72 +131,80 @@ export default function Home() {
           
           <div className="grid grid-cols-4 gap-8">
             {/* Melbourne Card */}
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50">
-              <div className="aspect-square relative overflow-hidden">
-                <Image
-                  src="/Melbourne.jpg"
-                  alt="Melbourne City"
-                  fill
-                  className="object-cover hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <Link href="/guidebook/melbourne">
+              <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50 cursor-pointer">
+                <div className="aspect-square relative overflow-hidden">
+                  <Image
+                    src="/Melbourne.jpg"
+                    alt="Melbourne City"
+                    fill
+                    className="object-cover hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-3 text-white">Melbourne, VIC</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">Experience the city of culture and its iconic landmarks.</p>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Melbourne, VIC</h3>
-                <p className="text-gray-300 text-sm leading-relaxed">Experience the city of culture and its iconic landmarks.</p>
-              </div>
-            </div>
+            </Link>
 
             {/* Sydney Card */}
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50">
-              <div className="aspect-square relative overflow-hidden">
-                <Image
-                  src="/Syd.jpg"
-                  alt="Sydney City"
-                  fill
-                  className="object-cover hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <Link href="/guidebook/sydney">
+              <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50 cursor-pointer">
+                <div className="aspect-square relative overflow-hidden">
+                  <Image
+                    src="/Syd.jpg"
+                    alt="Sydney City"
+                    fill
+                    className="object-cover hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-3 text-white">Sydney, NSW</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">Enjoy breathtaking views and beautiful sunsets.</p>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Sydney, NSW</h3>
-                <p className="text-gray-300 text-sm leading-relaxed">Enjoy breathtaking views and beautiful sunsets.</p>
-              </div>
-            </div>
+            </Link>
 
             {/* Brisbane Card */}
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50">
-              <div className="aspect-square relative overflow-hidden">
-                <Image
-                  src="/Brisbane.jpg"
-                  alt="Brisbane City"
-                  fill
-                  className="object-cover hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <Link href="/guidebook/brisbane">
+              <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50 cursor-pointer">
+                <div className="aspect-square relative overflow-hidden">
+                  <Image
+                    src="/Brisbane.jpg"
+                    alt="Brisbane City"
+                    fill
+                    className="object-cover hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-3 text-white">Brisbane, QLD</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">Discover the perfect blend of tradition and innovation.</p>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Brisbane, QLD</h3>
-                <p className="text-gray-300 text-sm leading-relaxed">Discover the perfect blend of tradition and innovation.</p>
-              </div>
-            </div>
+            </Link>
 
             {/* Perth Card */}
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50">
-              <div className="aspect-square relative overflow-hidden">
-                <Image
-                  src="/Perth.jpg"
-                  alt="Perth City"
-                  fill
-                  className="object-cover hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <Link href="/guidebook/perth">
+              <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-800/50 cursor-pointer">
+                <div className="aspect-square relative overflow-hidden">
+                  <Image
+                    src="/Perth.jpg"
+                    alt="Perth City"
+                    fill
+                    className="object-cover hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-3 text-white">Perth, WA</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">Relax on beautiful beaches and explore lush landscapes.</p>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Perth, WA</h3>
-                <p className="text-gray-300 text-sm leading-relaxed">Relax on beautiful beaches and explore lush landscapes.</p>
-              </div>
-            </div>
+            </Link>
           </div>
         </section>
 

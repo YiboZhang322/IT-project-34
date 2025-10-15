@@ -6,27 +6,22 @@ import {
 } from 'aws-amplify/auth'
 
 interface User {
-  id: string
+  _id: string
   email: string
-  name?: string
+  name: string
   avatar?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<{
-    success: boolean; isNewUser?: boolean; incorrectPassword?: boolean; needsConfirm?: boolean
-  }>
-  logout: () => Promise<void>
-  signup: (email: string, password: string, name: string) => Promise<boolean>
-  /** 新增：在“输入验证码”页面调用 */
-  confirmSignup: (email: string, code: string) => Promise<void>
-  /** 新增：重发验证码 */
-  resendCode: (email: string) => Promise<void>
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>
+  logout: () => void
+  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>
   updateUser: (userData: Partial<User>) => void
-  checkUserExists: (email: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -35,66 +30,111 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  function parseIdToken(idToken: string | undefined | null): User | null {
-    if (!idToken) return null
-    try {
-      const payload = JSON.parse(atob(idToken.split('.')[1]))
-      return {
-        id: payload.sub,
-        email: payload.email,
-        name: payload.name,
-        avatar: payload.name
-          ? `https://ui-avatars.com/api/?name=${encodeURIComponent(payload.name)}&background=f97316&color=000&size=128`
-          : undefined
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        // Check both localStorage and sessionStorage for token
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+        if (token) {
+          // Verify token and get user info
+          const response = await fetch('/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            setUser(data.user)
+          } else {
+            // Clear token from both storage locations
+            localStorage.removeItem('auth_token')
+            sessionStorage.removeItem('auth_token')
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        localStorage.removeItem('auth_token')
+        sessionStorage.removeItem('auth_token')
+      } finally {
+        setIsLoading(false)
       }
     } catch { return null }
   }
 
-  async function refreshSession() {
-    const s = await fetchAuthSession()
-    const idToken = s.tokens?.idToken?.toString()
-    setUser(parseIdToken(idToken))
-  }
-
-  useEffect(() => {
-    (async () => { try { await refreshSession() } finally { setIsLoading(false) } })()
-  }, [])
-
-  const login: AuthContextType['login'] = async (email, password) => {
+  const login = async (email: string, password: string, rememberMe: boolean = false): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true)
-      await signIn({ username: email, password })
-      await refreshSession()
-      return { success: true }
-    } catch (e: any) {
-      if (e?.name === 'UserNotFoundException') return { success: false, isNewUser: true }
-      if (e?.name === 'NotAuthorizedException') return { success: false, incorrectPassword: true }
-      if (e?.name === 'UserNotConfirmedException') return { success: false, needsConfirm: true }
-      return { success: false }
+      
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Store token based on rememberMe preference
+        if (rememberMe) {
+          localStorage.setItem('auth_token', data.token)
+        } else {
+          sessionStorage.setItem('auth_token', data.token)
+        }
+        setUser(data.user)
+        return { success: true }
+      } else {
+        return { success: false, error: data.error }
+      }
+    } catch (error) {
+      console.error('Login failed:', error)
+      return { success: false, error: 'Network error' }
     } finally {
       setIsLoading(false)
     }
   }
 
-  // AuthContext.tsx
-const signup: AuthContextType['signup'] = async (email, password, name) => {
-  setIsLoading(true)
-  try {
-    await signUp({
-      username: email,
-      password,
-      options: { userAttributes: { email, name } }
-    })
-    return true
-  } catch (e: any) {
-    console.error('Cognito signUp error:', e?.name, e?.message)
+  const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true)
+      
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, name }),
+      })
 
-    // 常见错误归一化，便于 UI 分辨
-    if (e?.name === 'UsernameExistsException') {
-      throw new Error('User already exists')
-    }
-    if (e?.name === 'InvalidPasswordException') {
-      throw new Error('Weak password')
+      const data = await response.json()
+
+      if (data.success) {
+        // Auto login
+        const loginResponse = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        })
+
+        const loginData = await loginResponse.json()
+        if (loginData.success) {
+          localStorage.setItem('auth_token', loginData.token)
+          setUser(loginData.user)
+        }
+        
+        return { success: true }
+      } else {
+        return { success: false, error: data.error }
+      }
+    } catch (error) {
+      console.error('Signup failed:', error)
+      return { success: false, error: 'Network error' }
+    } finally {
+      setIsLoading(false)
     }
     throw e
   } finally {
@@ -102,14 +142,16 @@ const signup: AuthContextType['signup'] = async (email, password, name) => {
   }
 }
 
-  // 新增：暴露给 /confirm 页面
-  const confirmSignup: AuthContextType['confirmSignup'] = async (email, code) => {
-    await confirmSignUp({ username: email, confirmationCode: code })
+  const logout = () => {
+    setUser(null)
+    localStorage.removeItem('auth_token')
+    sessionStorage.removeItem('auth_token')
   }
 
-  // 新增：重发验证码
-  const resendCode: AuthContextType['resendCode'] = async (email) => {
-    await resendSignUpCode({ username: email })
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...userData })
+    }
   }
 
   const logout = async () => { await signOut(); setUser(null) }
@@ -125,17 +167,53 @@ const signup: AuthContextType['signup'] = async (email, password, name) => {
     login,
     logout,
     signup,
-    confirmSignup,   // ← 新增
-    resendCode,      // ← 新增
-    updateUser,
-    checkUserExists
+    updateUser
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider')
-  return ctx
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
+// Higher-order component for protected routes
+export function withAuth<P extends object>(Component: React.ComponentType<P>) {
+  return function AuthenticatedComponent(props: P) {
+    const { isAuthenticated, isLoading } = useAuth()
+    
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-white/70">Loading...</p>
+          </div>
+        </div>
+      )
+    }
+    
+    if (!isAuthenticated) {
+      return (
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Access Denied</h2>
+            <p className="text-white/70 mb-6">Please log in to access this page.</p>
+            <a 
+              href="/login" 
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-black font-semibold px-6 py-3 rounded-full transition-all duration-200"
+            >
+              Go to Login
+            </a>
+          </div>
+        </div>
+      )
+    }
+    
+    return <Component {...props} />
+  }
 }

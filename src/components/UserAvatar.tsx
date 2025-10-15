@@ -2,8 +2,8 @@ import Image from 'next/image'
 
 interface UserAvatarProps {
   src?: string
-  name: string
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  name?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   className?: string
   showOnlineStatus?: boolean
   isOnline?: boolean
@@ -21,18 +21,21 @@ export default function UserAvatar({
     sm: 'w-6 h-6 text-xs',
     md: 'w-8 h-8 text-sm',
     lg: 'w-12 h-12 text-base',
-    xl: 'w-16 h-16 text-lg'
+    xl: 'w-16 h-16 text-lg',
+    '2xl': 'w-32 h-32 text-2xl'
   }
   
   const onlineIndicatorSizes = {
     sm: 'w-2 h-2',
     md: 'w-2.5 h-2.5',
     lg: 'w-3 h-3',
-    xl: 'w-4 h-4'
+    xl: 'w-4 h-4',
+    '2xl': 'w-5 h-5'
   }
 
-  // Generate initials from name
-  const initials = name
+  // Generate initials from name with safety check
+  const safeName = name || 'User'
+  const initials = safeName
     .split(' ')
     .map(word => word.charAt(0))
     .join('')
@@ -64,13 +67,13 @@ export default function UserAvatar({
         {src ? (
           <Image
             src={src}
-            alt={name}
+            alt={safeName}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${getAvatarColor(name)} flex items-center justify-center`}>
+          <div className={`w-full h-full bg-gradient-to-br ${getAvatarColor(safeName)} flex items-center justify-center`}>
             {initials}
           </div>
         )}
