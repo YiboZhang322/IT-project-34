@@ -616,7 +616,7 @@ export default function MelbourneGuidebookPage() {
             </button>
           </div>
 
-          {/* Map, Favorites, and Smart Planning Buttons */}
+          {/* Map, Favorites, and Quick Planning Buttons */}
           <div className="flex items-center gap-3">
             {/* Map Toggle Button */}
             <button
@@ -652,7 +652,7 @@ export default function MelbourneGuidebookPage() {
               )}
             </button>
 
-            {/* Smart Planning Button */}
+            {/* Quick Planning Button */}
             <Link href="/smart-planning">
               <button
                 className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${

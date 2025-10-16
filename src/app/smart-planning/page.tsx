@@ -56,9 +56,9 @@ interface DayPlan {
   activities: Activity[];
 }
 
-type PlanningMode = 'smart' | 'custom';
+type PlanningMode = 'quick' | 'custom';
 
-// Global configurations for both Smart and Custom planning
+// Global configurations for both Quick and Custom planning
 const budgetConfigs = {
   economy: {
     breakfastVenues: ['The Hardware Societe', 'Higher Ground', 'Kettle Black', 'Operator25', 'Seven Seeds Coffee Roasters', 'Top Paddock', 'Auction Rooms', 'Cumulus Inc.', 'St Ali Coffee Roasters', 'Proud Mary Coffee'],
@@ -138,7 +138,7 @@ const getTimeSlots = (hasElderly: boolean, budgetType: string) => {
   return baseSlots;
 };
 
-export default function SmartPlanningPage() {
+export default function QuickPlanningPage() {
   const { user, isAuthenticated, logout } = useAuth();
   const { info, error } = useToastContext();
   const router = useRouter();
@@ -146,7 +146,7 @@ export default function SmartPlanningPage() {
   const [tripData, setTripData] = useState<TripData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
-  const [planningMode, setPlanningMode] = useState<PlanningMode>('smart');
+  const [planningMode, setPlanningMode] = useState<PlanningMode>('quick');
   const [customPlan, setCustomPlan] = useState<DayPlan[]>([]);
   const [editingActivity, setEditingActivity] = useState<{ dayIndex: number; activityIndex: number; activity: Activity } | null>(null);
   const [showAddActivityModal, setShowAddActivityModal] = useState<{ dayIndex: number } | null>(null);
@@ -221,7 +221,7 @@ export default function SmartPlanningPage() {
     setTripData(null);
     setGeneratedPlan(null);
     setCustomPlan([]);
-    setPlanningMode('smart');
+    setPlanningMode('quick');
     setShowCustomPlan(false);
     info('Data Cleared', 'All trip data has been cleared. You can start fresh!');
   };
@@ -322,7 +322,7 @@ export default function SmartPlanningPage() {
         day * Math.ceil(favorites.length / days)
       );
       
-       // Generate smart base activities for custom planning
+       // Generate quick base activities for custom planning
        const generateCustomBaseActivities = () => {
          const getUniqueActivity = (activities: any[], usedSet: Set<string>, keyField: string = 'activity'): any | null => {
            const unusedActivities = activities.filter(activity => !usedSet.has(activity[keyField]));
@@ -1005,7 +1005,7 @@ export default function SmartPlanningPage() {
     }
   };
 
-  const generateSmartPlan = async () => {
+  const generateQuickPlan = async () => {
     const status = getCompletionStatus();
     
     if (!status.allComplete) {
@@ -1529,7 +1529,7 @@ export default function SmartPlanningPage() {
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-green-800 font-semibold">Ready to generate your smart itinerary!</p>
+              <p className="text-green-800 font-semibold">Ready to generate your quick itinerary!</p>
             </div>
           </div>
         )}
@@ -1796,7 +1796,7 @@ export default function SmartPlanningPage() {
             Trip Planning
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
-            Let us create your perfect itinerary based on your preferences and selected attractions
+            Create your perfect itinerary
           </p>
           
           {/* Mode Selection - Apple Style */}
@@ -1805,9 +1805,9 @@ export default function SmartPlanningPage() {
               <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-100/50 p-2">
                 <div className="flex gap-1">
                   <button
-                    onClick={() => setPlanningMode('smart')}
+                    onClick={() => setPlanningMode('quick')}
                     className={`px-8 py-4 rounded-3xl font-semibold transition-all duration-300 flex items-center gap-3 ${
-                      planningMode === 'smart'
+                      planningMode === 'quick'
                         ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl transform scale-105 shadow-orange-500/25'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50/80'
                     }`}
@@ -1815,7 +1815,7 @@ export default function SmartPlanningPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Smart Planning
+                    Quick Planning
                   </button>
                   <button
                     onClick={() => setPlanningMode('custom')}
@@ -1851,7 +1851,7 @@ export default function SmartPlanningPage() {
           )}
         </div>
 
-        {planningMode === 'smart' ? (
+        {planningMode === 'quick' ? (
           !generatedPlan ? (
             <>
               {renderProgressIndicator()}
@@ -1860,7 +1860,7 @@ export default function SmartPlanningPage() {
               
               <div className="text-center">
                 <button
-                  onClick={generateSmartPlan}
+                  onClick={generateQuickPlan}
                   disabled={!getCompletionStatus().allComplete || isGenerating}
                   className={`px-12 py-4 rounded-2xl font-bold text-xl transition-all duration-300 ${
                     !getCompletionStatus().allComplete || isGenerating
@@ -1878,7 +1878,7 @@ export default function SmartPlanningPage() {
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      Generate Smart Itinerary
+                      Generate Quick Itinerary
                     </div>
                   )}
                 </button>

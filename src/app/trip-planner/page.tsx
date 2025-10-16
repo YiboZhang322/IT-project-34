@@ -287,7 +287,7 @@ export default function TripPlanner() {
   );
 
   const handleStartPlanning = () => {
-    // Navigate to smart planning page
+    // Navigate to quick planning page
     window.location.href = '/smart-planning';
   };
 
